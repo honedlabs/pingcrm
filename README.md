@@ -8,11 +8,11 @@ This repository provides an example project utilising the Honed package ecosyste
 - Shadcn/UI for Vue
 
 The Honed packages which are installed are:
-- Table
-- Refine
 - Action
-- Lock
-- Crumb
 - Chart
-- Nav
+- Crumb
+- Lock
 - Modal
+- Nav
+- Refine
+- Table
