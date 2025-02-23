@@ -64,3 +64,6 @@ composer eval
 ## Production
 The demo site is available at [https://demo.honed.dev](https://demo.honed.dev).
 All data is wiped periodically.
+
+## Documentation
+You can find the full documentation, and more, on the [Honed main site](https://honed.dev).

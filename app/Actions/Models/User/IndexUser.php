@@ -7,7 +7,7 @@ namespace App\Actions\Models\User;
 use App\Tables\UserTable;
 use Honed\Action\Contracts\Actionable;
 
-final class Index implements Actionable
+final class IndexUser implements Actionable
 {
     /**
      * Handle the action.

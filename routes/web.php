@@ -1,15 +1,17 @@
 <?php
 
+declare(strict_types=1);
+
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Foundation\Application;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\UserController;
 use App\Http\Controllers\ProfileController;
 
 Route::middleware('auth')->group(function () {
-
+    Route::resource('users', UserController::class);
 });
-Route::get('/', HomeController::class);
 
 Route::get('/dashboard', function () {
     return Inertia::render('Dashboard');
