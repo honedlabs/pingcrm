@@ -1,12 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Policies;
 
 use App\Models\Organization;
 use App\Models\User;
 use Illuminate\Auth\Access\Response;
 
-class OrganizationPolicy
+final class OrganizationPolicy
 {
     /**
      * Determine whether the user can view any models.
@@ -19,9 +21,11 @@ class OrganizationPolicy
     /**
      * Determine whether the user can view the model.
      */
-    public function view(User $user, Organization $organization): bool
+    public function view(User $user, Organization $organization): Response
     {
-        return $organization->belongsToAccount($user);
+        return $organization->belongsToAccount($user)
+            ? Response::allow()
+            : Response::denyAsNotFound();
     }
 
     /**
@@ -35,32 +39,40 @@ class OrganizationPolicy
     /**
      * Determine whether the user can update the model.
      */
-    public function update(User $user, Organization $organization): bool
+    public function update(User $user, Organization $organization): Response
     {
-        return $organization->belongsToAccount($user);
+        return $organization->belongsToAccount($user)
+            ? Response::allow()
+            : Response::denyAsNotFound();
     }
 
     /**
      * Determine whether the user can delete the model.
      */
-    public function delete(User $user, Organization $organization): bool
+    public function delete(User $user, Organization $organization): Response
     {
-        return $user->isOwner() && $organization->belongsToAccount($user);
+        return $user->isOwner() && $organization->belongsToAccount($user)
+            ? Response::allow()
+            : Response::denyAsNotFound();
     }
 
     /**
      * Determine whether the user can restore the model.
      */
-    public function restore(User $user, Organization $organization): bool
+    public function restore(User $user, Organization $organization): Response
     {
-        return $user->isOwner() && $organization->belongsToAccount($user);
+        return $user->isOwner() && $organization->belongsToAccount($user)
+            ? Response::allow()
+            : Response::denyAsNotFound();
     }
 
     /**
      * Determine whether the user can permanently delete the model.
      */
-    public function forceDelete(User $user, Organization $organization): bool
+    public function forceDelete(User $user, Organization $organization): Response
     {
-        return $user->isOwner() && $organization->belongsToAccount($user);
+        return $user->isOwner() && $organization->belongsToAccount($user)
+            ? Response::allow()
+            : Response::denyAsNotFound();
     }
 }

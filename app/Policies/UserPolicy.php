@@ -1,11 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Policies;
 
 use App\Models\User;
 use Illuminate\Auth\Access\Response;
 
-class UserPolicy
+final class UserPolicy
 {
     /**
      * Determine whether the user can view any models.
@@ -18,9 +20,11 @@ class UserPolicy
     /**
      * Determine whether the user can view the model.
      */
-    public function view(User $user, User $model): bool
+    public function view(User $user, User $model): Response
     {
-        return $user->account_id === $model->account_id;
+        return $model->belongsToAccount($user)
+            ? Response::allow()
+            : Response::denyAsNotFound();
     }
 
     /**
@@ -34,9 +38,11 @@ class UserPolicy
     /**
      * Determine whether the user can update the model.
      */
-    public function update(User $user, User $model): bool
+    public function update(User $user, User $model): Response
     {
-        return $user->isOwner() && $user->account_id === $model->account_id;
+        return $user->isOwner() && $model->belongsToAccount($user)
+            ? Response::allow()
+            : Response::denyAsNotFound();
     }
 
     /**
