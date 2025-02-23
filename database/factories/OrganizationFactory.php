@@ -22,7 +22,7 @@ final class OrganizationFactory extends Factory
             'phone' => fake()->phoneNumber(),
             'address' => fake()->streetAddress(),
             'city' => fake()->city(),
-            'region' => fake()->region(),
+            'region' => fake()->state(),
             'country' => 'US',
             'postal_code' => fake()->postcode(),
         ];

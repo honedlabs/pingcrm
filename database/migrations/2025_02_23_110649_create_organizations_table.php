@@ -15,7 +15,7 @@ return new class extends Migration
     {
         Schema::create('organizations', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('account_id')->constrained();
+            $table->foreignId('account_id')->constrained()->onDelete('cascade');
             $table->string('name', 128);
             $table->string('email', 64)->nullable();
             $table->string('phone', 64)->nullable();
