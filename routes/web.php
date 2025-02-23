@@ -6,6 +6,9 @@ use Illuminate\Foundation\Application;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\ProfileController;
 
+Route::middleware('auth')->group(function () {
+
+});
 Route::get('/', HomeController::class);
 
 Route::get('/dashboard', function () {

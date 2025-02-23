@@ -18,7 +18,7 @@ final class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $account = Account::factory()
-            ->has(User::factory()
+            ->has(User::factory(1)
                 ->state([
                     'first_name' => 'John',
                     'last_name' => 'Doe',
@@ -27,7 +27,7 @@ final class DatabaseSeeder extends Seeder
                     'owner' => true,
                 ])
             )
-            ->has(User::factory())
+            ->has(User::factory(5))
             ->has(Organization::factory(100))
             ->create(['name' => 'Acme Corporation']);
 

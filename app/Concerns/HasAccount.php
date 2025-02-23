@@ -16,6 +16,9 @@ use App\Models\Scopes\AccountScope;
  */
 trait HasAccount
 {
+    /**
+     * Boot the HasAccount trait to register the account scope.
+     */
     public static function bootHasAccount(): void
     {
         static::addGlobalScope(new AccountScope());

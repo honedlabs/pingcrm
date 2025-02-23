@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "d2cf86a918fce857044b033a92103b25",
+    "content-hash": "04425a453214fecb21fcf40ab0044767",
     "packages": [
         {
             "name": "brick/math",
@@ -1417,6 +1417,80 @@
                 }
             ],
             "time": "2025-02-16T07:25:31+00:00"
+        },
+        {
+            "name": "honed/modal",
+            "version": "v0.1.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/honedlabs/modal.git",
+                "reference": "81c6af58ff2b964113b48b4832f87fcf10eebfd8"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/honedlabs/modal/zipball/81c6af58ff2b964113b48b4832f87fcf10eebfd8",
+                "reference": "81c6af58ff2b964113b48b4832f87fcf10eebfd8",
+                "shasum": ""
+            },
+            "require": {
+                "illuminate/support": "^11.0",
+                "inertiajs/inertia-laravel": "^1.0|^2.0",
+                "php": "^8.2"
+            },
+            "require-dev": {
+                "larastan/larastan": "^3.0",
+                "laravel/pint": "^1.18",
+                "orchestra/testbench": "^9.0.0",
+                "pestphp/pest": "^3.5.1",
+                "pestphp/pest-plugin-arch": "^3.0.0",
+                "pestphp/pest-plugin-laravel": "^3.0",
+                "phpstan/extension-installer": "^1.4.3",
+                "phpstan/phpstan-deprecation-rules": "^2.0.1",
+                "phpstan/phpstan-phpunit": "^2.0.3"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Honed\\Modal\\ModalServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Honed\\Modal\\": "src/",
+                    "Honed\\Modal\\Tests\\": "tests/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Joshua Wallace",
+                    "email": "josh@joshua-wallace.com",
+                    "homepage": "https://joshua-wallace.com",
+                    "role": "Developer"
+                },
+                {
+                    "name": "Boris Lepikhin",
+                    "email": "boris@lepikhin.com"
+                }
+            ],
+            "description": "Build dynamic modal dialogs for your Inertia-powered Laravel apps",
+            "homepage": "https://github.com/honedlabs/modal",
+            "keywords": [
+                "honed",
+                "inertia",
+                "laravel",
+                "modal"
+            ],
+            "support": {
+                "issues": "https://github.com/honedlabs/modal/issues",
+                "source": "https://github.com/honedlabs/modal/tree/v0.1.0"
+            },
+            "time": "2024-12-04T02:32:53+00:00"
         },
         {
             "name": "honed/refine",

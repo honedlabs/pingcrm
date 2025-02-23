@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Concerns\HasAccount;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -15,11 +16,7 @@ final class Organization extends Model
     /** @use HasFactory<\Database\Factories\OrganizationFactory> */
     use HasFactory;
     use SoftDeletes;
-
-    public function account(): BelongsTo
-    {
-        return $this->belongsTo(Account::class);
-    }
+    use HasAccount;
 
     public function contacts(): HasMany
     {
