@@ -6,7 +6,11 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use Illuminate\Http\Request;
+use App\Actions\Models\User\EditUser;
 use App\Actions\Models\User\IndexUser;
+use App\Actions\Models\User\StoreUser;
+use App\Actions\Models\User\CreateUser;
+use App\Actions\Models\User\UpdateUser;
 
 final class UserController extends Controller
 {
@@ -23,7 +27,7 @@ final class UserController extends Controller
     /**
      * Show the form for creating a new resource.
      */
-    public function create($action)
+    public function create(CreateUser $action)
     {
         $this->authorize('create', User::class);
 
@@ -33,7 +37,7 @@ final class UserController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request, $action)
+    public function store(Request $request, StoreUser $action)
     {
         $this->authorize('create', User::class);
 
@@ -51,7 +55,7 @@ final class UserController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(User $user, $action)
+    public function edit(User $user, EditUser $action)
     {
         $this->authorize('update', $user);
 
@@ -61,7 +65,7 @@ final class UserController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, User $user, $action)
+    public function update(Request $request, User $user, UpdateUser $action)
     {
         $this->authorize('update', $user);
 
@@ -71,10 +75,12 @@ final class UserController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(User $user, $action)
+    public function destroy(User $user)
     {
         $this->authorize('delete', $user);
 
-        return $action->handle();
+        $user->delete();
+
+        return to_route('users.index');
     }
 }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Concerns;
 
+use App\Contracts\ForAccount;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use App\Models\Account;
 use App\Models\Scopes\AccountScope;
@@ -30,5 +31,21 @@ trait HasAccount
     public function account(): BelongsTo
     {
         return $this->belongsTo(Account::class);
+    }
+
+    /**
+     * Determine if the model belongs to the given account identifier.
+     */
+    public function belongsToAccount(Account|ForAccount|int $model): bool
+    {
+        if ($model instanceof ForAccount) {
+            return $this->account_id === $model->account_id;
+        }
+
+        if ($model instanceof Account) {
+            return $this->account_id === $model->id;
+        }
+
+        return $this->account_id === $model;
     }
 }

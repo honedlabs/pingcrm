@@ -9,9 +9,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use App\Concerns\HasAccount;
+use App\Contracts\ForAccount;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-final class User extends Authenticatable
+final class User extends Authenticatable implements ForAccount
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory;
