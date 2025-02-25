@@ -60,9 +60,10 @@ const onSubmit = () => {
                     Forgot your password?
                 </Link>
 
-                <Button
-                    :class="{ 'opacity-25': form.processing }"
+                <Button type="submit"
+                    class="min-w-20"
                     :disabled="form.processing"
+                    :loading="form.processing"
                 >
                     Log in
                 </Button>

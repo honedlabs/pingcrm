@@ -18,7 +18,7 @@ final class User extends Authenticatable implements ForAccount
     use HasFactory;
     use Notifiable;
     use SoftDeletes;
-    use HasAccount;
+    // use HasAccount; Cannot globally scope the users table
 
     /**
      * The attributes that are mass assignable.

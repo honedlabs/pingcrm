@@ -6,7 +6,6 @@ namespace Database\Seeders;
 
 use App\Models\User;
 use App\Models\Account;
-use App\Models\Contact;
 use App\Models\Organization;
 use Illuminate\Database\Seeder;
 
