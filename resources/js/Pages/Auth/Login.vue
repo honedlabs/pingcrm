@@ -5,8 +5,10 @@ import { GuestLayout } from '@/Layouts';
 // import InputLabel from '@/Components/InputLabel.vue';
 // import PrimaryButton from '@/Components/PrimaryButton.vue';
 // import TextInput from '@/Components/TextInput.vue';
-import { Head, Link, useForm } from '@inertiajs/vue3';
+import { Link, useForm } from '@inertiajs/vue3';
 import { Button } from '@/components/button';
+import { Field } from '@/components/field';
+import { Form } from '@/components/form';
 // import {}
 
 defineProps<{
@@ -30,39 +32,24 @@ const onSubmit = () => {
 </script>
 
 <template>
-    <GuestLayout>
-        <Head title="Log in" />
-        <form @submit.prevent="onSubmit">
-            <div>
-                <InputLabel for="email" value="Email" />
+    <GuestLayout title="Log in">
+        <Form @submit="onSubmit">
+            <Field label="Email" 
+                v-model="form.email"
+                type="email"
+                :error="form.errors.email" 
+                autofocus
+                autocomplete="username"
+                placeholder="your@email.com"
+            />
 
-                <TextInput
-                    id="email"
-                    type="email"
-                    class="mt-1 block w-full"
-                    v-model="form.email"
-                    required
-                    autofocus
-                    autocomplete="username"
-                />
-
-                <InputError class="mt-2" :message="form.errors.email" />
-            </div>
-
-            <div class="mt-4">
-                <InputLabel for="password" value="Password" />
-
-                <TextInput
-                    id="password"
-                    type="password"
-                    class="mt-1 block w-full"
-                    v-model="form.password"
-                    required
-                    autocomplete="current-password"
-                />
-
-                <InputError class="mt-2" :message="form.errors.password" />
-            </div>
+            <Field label="Password" 
+                v-model="form.password"
+                type="password"
+                :error="form.errors.password" 
+                autocomplete="current-password"
+                placeholder="Enter your password..."
+            />
 
             <div class="mt-4 block">
                 <label class="flex items-center">
@@ -83,13 +70,12 @@ const onSubmit = () => {
                 </Link>
 
                 <Button
-                    class="ms-4"
                     :class="{ 'opacity-25': form.processing }"
                     :disabled="form.processing"
                 >
                     Log in
                 </Button>
             </div>
-        </form>
+        </Form>
     </GuestLayout>
 </template>
