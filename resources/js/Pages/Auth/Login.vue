@@ -1,11 +1,13 @@
 <script setup lang="ts">
-import Checkbox from '@/Components/Checkbox.vue';
-import GuestLayout from '@/Layouts/GuestLayout.vue';
-import InputError from '@/Components/InputError.vue';
-import InputLabel from '@/Components/InputLabel.vue';
-import PrimaryButton from '@/Components/PrimaryButton.vue';
-import TextInput from '@/Components/TextInput.vue';
+// import Checkbox from '@/Components/Checkbox.vue';
+import { GuestLayout } from '@/Layouts';
+// import InputError from '@/Components/InputError.vue';
+// import InputLabel from '@/Components/InputLabel.vue';
+// import PrimaryButton from '@/Components/PrimaryButton.vue';
+// import TextInput from '@/Components/TextInput.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
+import { Button } from '@/components/button';
+// import {}
 
 defineProps<{
     canResetPassword?: boolean;
@@ -18,7 +20,7 @@ const form = useForm({
     remember: false,
 });
 
-const submit = () => {
+const onSubmit = () => {
     form.post(route('login'), {
         onFinish: () => {
             form.reset('password');
@@ -30,12 +32,7 @@ const submit = () => {
 <template>
     <GuestLayout>
         <Head title="Log in" />
-
-        <div v-if="status" class="mb-4 text-sm font-medium text-green-600">
-            {{ status }}
-        </div>
-
-        <form @submit.prevent="submit">
+        <form @submit.prevent="onSubmit">
             <div>
                 <InputLabel for="email" value="Email" />
 
@@ -85,13 +82,13 @@ const submit = () => {
                     Forgot your password?
                 </Link>
 
-                <PrimaryButton
+                <Button
                     class="ms-4"
                     :class="{ 'opacity-25': form.processing }"
                     :disabled="form.processing"
                 >
                     Log in
-                </PrimaryButton>
+                </Button>
             </div>
         </form>
     </GuestLayout>

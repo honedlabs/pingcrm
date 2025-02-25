@@ -35,11 +35,13 @@ final class DatabaseSeeder extends Seeder
             ->where('account_id', $account->id)
             ->pluck('id');
 
-        Contact::factory(100)
-            ->for($account)
-            ->create()
-            ->each(fn (Contact $contact) => $contact->update([
-                'organization_id' => $organization_ids->random(),
-            ]));
+        // Contact::factory(100)
+        //     ->state([
+        //         'account_id' => $account->id,
+        //     ])
+        //     ->create()
+        //     ->each(fn (Contact $contact) => $contact->update([
+        //         'organization_id' => $organization_ids->random(),
+        //     ]));
     }
 }
