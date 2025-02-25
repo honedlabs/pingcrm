@@ -9,8 +9,9 @@ use App\Http\Controllers\ContactController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\OrganizationController;
+use Honed\Nav\Middleware\ShareNavigation;
 
-Route::middleware('auth')->group(function () {
+Route::middleware(['auth', 'nav:app'])->group(function () {
     Route::singleton('dashboard', DashboardController::class)
         ->only('show');
     Route::resource('users', UserController::class);

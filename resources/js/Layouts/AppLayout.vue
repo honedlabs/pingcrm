@@ -2,6 +2,7 @@
 import { ref } from 'vue';
 import { Link } from '@inertiajs/vue3';
 import BaseLayout from './BaseLayout.vue'
+import { Branding } from '@/components/branding';
 import { 
     SidebarProvider, 
     Sidebar, 
@@ -11,48 +12,35 @@ import {
     SidebarGroupContent,
     SidebarMenu,
     SidebarMenuItem, 
-    SidebarMenuButton 
+    SidebarMenuButton, 
+    SidebarHeader
 } from '@/components/sidebar';
+import { useNav } from '@/nav';
 
-const items = [
-    {
-        title: "Home",
-        href: "#",
-    },
-    {
-        title: "Inbox",
-        href: "#",
-    },
-    {
-        title: "Calendar",
-        href: "#",
-    },
-    {
-        title: "Search",
-        href: "#",
-    },
-    {
-        title: "Settings",
-        href: "#",
-    },
-];
+const nav = useNav();
+
 </script>
 
 <template>
     <BaseLayout>
         <SidebarProvider>
             <Sidebar>
+                <SidebarHeader class="bg-indigo-800">
+                    <Link href="/">
+                        <Branding class="h-6"/>
+                    </Link>
+                </SidebarHeader>
                 <SidebarContent>
-                    <SidebarGroup>
+                    <SidebarGroup v-for="group in nav" :key="group.label">
                         <SidebarGroupLabel>
-                            Pages
+                            {{ group.label }}
                         </SidebarGroupLabel>
                         <SidebarGroupContent>
                             <SidebarMenu>
-                                <SidebarMenuItem v-for="item in items" :key="item.name">
+                                <SidebarMenuItem v-for="item in group.items" :key="item.name">
                                     <SidebarMenuButton as-child>
                                         <Link :href="item.href">
-                                            {{ item.title }}
+                                            {{ item.label }}
                                         </Link>
                                     </SidebarMenuButton>
                                 </SidebarMenuItem>
@@ -61,9 +49,15 @@ const items = [
                     </SidebarGroup>
                 </SidebarContent>
             </Sidebar>
-            <main>
-                <slot />
-            </main>
+            <div>
+                <header>
+                    x
+                    {{ $page.props.nav }}
+                </header>
+                <main class="px-8 py-4">
+                    <slot />
+                </main>
+            </div>
         </SidebarProvider>
 
     </BaseLayout>

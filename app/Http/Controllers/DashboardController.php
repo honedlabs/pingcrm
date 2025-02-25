@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use Honed\Nav\Facades\Nav;
 use Illuminate\Http\Request;
 
 final class DashboardController extends Controller
