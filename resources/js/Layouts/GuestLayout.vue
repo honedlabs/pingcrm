@@ -16,7 +16,7 @@ const { title } = defineProps<Props>()
         <Head :title />
         <div class="bg-primary min-h-screen flex flex-col items-center justify-center space-y-8">
             <Branding class="h-12 mx-auto fill-white"/>
-            <Card class="w-full max-w-xl">
+            <Card class="w-full max-w-lg">
                 <CardContent>
                     <slot />
                 </CardContent>

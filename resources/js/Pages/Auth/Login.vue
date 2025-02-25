@@ -1,15 +1,12 @@
 <script setup lang="ts">
-// import Checkbox from '@/Components/Checkbox.vue';
 import { GuestLayout } from '@/Layouts';
-// import InputError from '@/Components/InputError.vue';
-// import InputLabel from '@/Components/InputLabel.vue';
-// import PrimaryButton from '@/Components/PrimaryButton.vue';
-// import TextInput from '@/Components/TextInput.vue';
 import { Link, useForm } from '@inertiajs/vue3';
 import { Button } from '@/components/button';
 import { Field } from '@/components/field';
 import { Form } from '@/components/form';
-// import {}
+import { Checkbox } from '@/components/checkbox';
+import { Block } from '@/components/block';
+import { Label } from '@/components/label';
 
 defineProps<{
     canResetPassword?: boolean;
@@ -17,8 +14,8 @@ defineProps<{
 }>();
 
 const form = useForm({
-    email: '',
-    password: '',
+    email: 'johndoe@example.com',
+    password: 'secret',
     remember: false,
 });
 
@@ -42,7 +39,6 @@ const onSubmit = () => {
                 autocomplete="username"
                 placeholder="your@email.com"
             />
-
             <Field label="Password" 
                 v-model="form.password"
                 type="password"
@@ -50,15 +46,10 @@ const onSubmit = () => {
                 autocomplete="current-password"
                 placeholder="Enter your password..."
             />
-
-            <div class="mt-4 block">
-                <label class="flex items-center">
-                    <Checkbox name="remember" v-model:checked="form.remember" />
-                    <span class="ms-2 text-sm text-gray-600 dark:text-gray-400"
-                        >Remember me</span
-                    >
-                </label>
-            </div>
+            <Block as="label" variant="inline">
+                <Checkbox name="remember" v-model="form.remember" />
+                <Label as="span">Remember me</Label>
+            </Block>
 
             <div class="mt-4 flex items-center justify-end">
                 <Link
