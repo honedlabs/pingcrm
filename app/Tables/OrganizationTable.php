@@ -6,21 +6,23 @@ namespace App\Tables;
 
 use Honed\Table\Table;
 use App\Models\Organization;
-use Honed\Refine\Filters\SetFilter;
+use Honed\Action\BulkAction;
+use Honed\Action\PageAction;
 use Honed\Refine\Sorts\Sort;
+use Honed\Action\InlineAction;
 use Honed\Table\Columns\Column;
 use Honed\Table\Filters\Filter;
 use Honed\Table\Columns\KeyColumn;
-use Honed\Table\Actions\BulkAction;
-use Honed\Table\Actions\PageAction;
+use Honed\Refine\Filters\SetFilter;
 use Honed\Table\Columns\DateColumn;
 use Honed\Table\Columns\TextColumn;
-use Honed\Table\Actions\InlineAction;
 use Honed\Table\Columns\NumberColumn;
 use Illuminate\Contracts\Database\Query\Builder;
 
 final class OrganizationTable extends Table
 {
+    public $toggle = true;
+
     public $pagination = [5, 10, 25, 50, 100];
 
     public function resource()
@@ -91,6 +93,19 @@ final class OrganizationTable extends Table
     public function actions(): array
     {
         return [
+            InlineAction::make('edit', 'Edit')
+                ->route(fn ($organization) => route('organizations.edit', $organization->id)),
+            InlineAction::make('delete', 'Delete')
+                ->allow(fn ($organization) => ($organization->id % 2) === 0),
+
+            BulkAction::make('delete', 'Delete'),
+            BulkAction::make('touch')
+                ->action(fn ($organizations) => $organizations
+                    ->each(fn ($organization) => $organization->touch())
+                ),
+
+            PageAction::make('create')
+                ->route('organizations.create')
 
         ];
     }

@@ -1,8 +1,14 @@
 <script setup lang="ts">
 import { Head } from '@inertiajs/vue3'
 import { AppLayout } from '@/Layouts'
-import { Card } from '@/components/card'
+import { Card, CardContent } from '@/components/card'
 import { Table, TableCaption, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/table'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/dropdown-menu'
+import { Ellipsis } from 'lucide-vue-next'
+import { Input } from '@/components/input'
+import { Button } from '@/components/button'
+import { Checkbox } from '@/components/checkbox'
+import { VisuallyHidden } from 'reka-ui'
 
 defineOptions({ layout: AppLayout })
 
@@ -19,31 +25,87 @@ const { organizations } = defineProps<Props>()
 <template>
     <Head title="Organizations" />
     <Card>
+        <div class="py-4 px-2 flex gap-x-2">
+            <Input placeholder="Search" />
+            <Button variant="outline">
+                Actions
+            </Button>
+            <DropdownMenu :modal="false">
+                <DropdownMenuTrigger as-child>
+                    <Button variant="outline">
+                        Sort
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                    <DropdownMenuItem>
+                        Name
+                    </DropdownMenuItem>
+                </DropdownMenuContent>
+            </DropdownMenu>
+            <Button variant="outline">
+                Filter
+            </Button>
+            <DropdownMenu :modal="false">
+                <DropdownMenuTrigger as-child>
+                    <Button variant="outline">
+                        Columns
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                    <DropdownMenuItem v-for="column in organizations.columns" :key="column.name">
+                        {{ column.label }}
+                    </DropdownMenuItem>
+                </DropdownMenuContent>
+            </DropdownMenu>
+        </div>
         <Table>
             <TableCaption class="sr-only">A list of your recent invoices.</TableCaption>
             <TableHeader>
                 <TableRow>
-                    <TableHead class="w-[100px]">
-                        Invoice
+                    <TableHead>
+                        <div class="flex items-center">
+                            <Checkbox />
+                        </div>
                     </TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Method</TableHead>
-                    <TableHead class="text-right">
-                        Amount
+                    <TableHead v-for="column in organizations.columns" :key="column.name">
+                        {{ column.label }}
+                    </TableHead>
+                    <TableHead>
+                        Actions
                     </TableHead>
                 </TableRow>
             </TableHeader>
             <TableBody>
-                <!-- <TableRow v-for="invoice in invoices" :key="invoice.invoice">
-                    <TableCell class="font-medium">
-                        {{ invoice.invoice }}
+                <TableRow v-for="row in organizations.records" :key="row.id">
+                    <TableCell>
+                        <div class="flex items-center">
+                            <Checkbox />
+                        </div>
                     </TableCell>
-                    <TableCell>{{ invoice.paymentStatus }}</TableCell>
-                    <TableCell>{{ invoice.paymentMethod }}</TableCell>
-                    <TableCell class="text-right">
-                        {{ invoice.totalAmount }}
+                    <TableCell v-for="column in organizations.columns" 
+                        :key="column.name" 
+                        class="font-medium"
+                    >
+                        {{ row[column.name] }}
                     </TableCell>
-                </TableRow> -->
+                    <TableCell>
+                        <DropdownMenu :modal="false">
+                            <DropdownMenuTrigger>
+                                <div class="flex items-center">
+                                    <Ellipsis class="size-4" />
+                                </div>
+                                <VisuallyHidden>
+                                    Toggle actions menu
+                                </VisuallyHidden>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                                <DropdownMenuItem>
+                                    {{ row.actions.length }}
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    </TableCell>
+                </TableRow>
             </TableBody>
         </Table>
     </Card>
