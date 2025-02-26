@@ -49,10 +49,9 @@ const nav = useNav();
                     </SidebarGroup>
                 </SidebarContent>
             </Sidebar>
-            <div>
+            <div class="w-full">
                 <header>
-                    x
-                    {{ $page.props.nav }}
+
                 </header>
                 <main class="px-8 py-4">
                     <slot />

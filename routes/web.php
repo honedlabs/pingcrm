@@ -2,18 +2,15 @@
 
 declare(strict_types=1);
 
-use Inertia\Inertia;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\OrganizationController;
-use Honed\Nav\Middleware\ShareNavigation;
 
 Route::middleware(['auth', 'nav:app'])->group(function () {
-    Route::singleton('dashboard', DashboardController::class)
-        ->only('show');
+    Route::get('/', [DashboardController::class, 'show'])->name('dashboard.show');
     Route::resource('users', UserController::class);
     Route::resource('organizations', OrganizationController::class);
     Route::resource('contacts', ContactController::class);

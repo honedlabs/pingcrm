@@ -19,7 +19,7 @@ final class UserController extends Controller
      */
     public function index(IndexUser $action)
     {
-        $this->authorize('index', User::class);
+        $this->authorize('viewAny', User::class);
 
         return $action->handle();
     }
@@ -49,7 +49,7 @@ final class UserController extends Controller
      */
     public function show(User $user, $action)
     {
-        $this->authorize('show', $user);
+        $this->authorize('view', $user);
     }
 
     /**

@@ -2,18 +2,21 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Organization;
+use App\Actions\Organization\Index;
 use App\Http\Requests\StoreOrganizationRequest;
 use App\Http\Requests\UpdateOrganizationRequest;
-use App\Models\Organization;
 
 class OrganizationController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Index $action)
     {
-        //
+        $this->authorize('viewAny', Organization::class);
+        
+        return $action->handle();
     }
 
     /**
