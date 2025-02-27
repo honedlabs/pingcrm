@@ -96,9 +96,20 @@ const table = useTable(props, 'organizations')
                             Countries
                         </DropdownMenuSubTrigger>
                         <DropdownMenuSubContent align="start">
-                            <DropdownMenuCheckboxItem>
-                                
+                            <DropdownMenuCheckboxItem v-for="option in table.getFilter('country')?.options ?? []"
+                                :key="option.value"
+                                v-bind="table.bindOption(option, 'country')"
+                            >
+                                {{ option.label }}
                             </DropdownMenuCheckboxItem>
+                        </DropdownMenuSubContent>
+                    </DropdownMenuSub>
+                    <DropdownMenuSub>
+                        <DropdownMenuSubTrigger>
+                            Countries
+                        </DropdownMenuSubTrigger>
+                        <DropdownMenuSubContent align="start">
+                            <Input />
                         </DropdownMenuSubContent>
                     </DropdownMenuSub>
                 </DropdownMenuContent>

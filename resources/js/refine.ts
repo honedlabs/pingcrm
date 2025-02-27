@@ -21,8 +21,10 @@ export interface SortRefiner extends Refiner {
 
 export type FilterValue = string | number | boolean | null
 
+export type KnownFilter = 'filter' | 'set' | 'date' | 'boolean' | 'trashed'
+
 export interface FilterRefiner extends Refiner {
-    type: 'filter' | 'set' | 'date' | 'boolean' | string
+    type: KnownFilter | string
     value: FilterValue
 }
 
@@ -48,6 +50,8 @@ export interface BooleanFilterRefiner extends FilterRefiner {
     value: boolean
 }
 
+type Filter = SetFilterRefiner | DateFilterRefiner | BooleanFilterRefiner | FilterRefiner
+
 export interface SearchRefiner extends Refiner { }
 
 export interface Keys {
@@ -58,33 +62,35 @@ export interface Keys {
 
 export interface Refine {
     sorts: SortRefiner[]
-    filters: FilterRefiner[]
+    filters: Filter[]
     search: string | null
     keys: Keys
     searches?: SearchRefiner[]
 }
 
-export interface DefaultOptions extends VisitOptions {
+export interface SearchOptions {
     /**
-     * Whether the refinements should be applied immediately when changed
+     * The debounce time in milliseconds.
      * 
-     * @default true
+     * @default 750
      */
-    immediate?: boolean
+    debounce?: number
 }
 
 export function useRefine<
     T extends object,
-    K extends {
-        [K in keyof T]: T[K] extends Refine ? K : never
-    }[keyof T]
->(props: T, key: K, defaultOptions: VisitOptions = {}) {
+    K extends T[keyof T] extends Refine ? keyof T : never,
+>(
+    props: T, 
+    key: K, 
+    defaultOptions: VisitOptions = {}
+) {
     const refinements = computed(() => props[key] as Refine)
 
-    // defaultOptions = {
-    //     ...defaultOptions,
-    //     only: [...((defaultOptions.only ?? []) as string[]), key.toString()]
-    // }
+    defaultOptions = {
+        ...defaultOptions,
+        only: [...((defaultOptions.only ?? []) as string[]), key.toString()]
+    }
 
     /**
      * The available filters.
@@ -93,7 +99,7 @@ export function useRefine<
         ...filter,
         apply: (value: T, options: VisitOptions = {}) => applyFilter(filter.name, value, options),
         clear: (options: VisitOptions = {}) => clearFilter(filter.name, options),
-        // bind: () => bindFilter(filter.name)
+        bind: () => bindFilter(filter.name)
     })))
 
     /**
@@ -102,33 +108,100 @@ export function useRefine<
     const sorts = computed(() => refinements.value.sorts.map(sort => ({
         ...sort,
         apply: (options: VisitOptions = {}) => applySort(sort.name, sort.direction, options),
-        // clear: (options: VisitOptions = {}) => clearSort(sort.name, options),
+        clear: (options: VisitOptions = {}) => clearSort(options),
     })))
 
+    /**
+     * Converts an array parameter to a comma-separated string for URL parameters.
+     */
+    function getArrayParameter(value: any) {
+        if (Array.isArray(value)) {
+            return value.join(',')
+        }
+
+        return value
+    }
+
+    /**
+     * Formats a string value for search parameters.
+     */
+    function getStringValue(value: any) {
+        if (typeof value !== 'string') {
+            return value
+        }
+
+        return value.trim().replace(/\s+/g, '+')
+    }
+
+    /**
+     * Returns undefined if the value is an empty string, null, or undefined.
+     */
+    function getOmittedParameter(value: any) {
+        if (['', null, undefined, []].includes(value)) {
+            return undefined
+        }
+
+        return value
+    }
+
+    /**
+     * Toggle the presence of a value in an array.
+     */
+    function getToggledParameter(value: any, values: any) {
+        values = Array.isArray(values) ? values : [values];
+
+        if (values.includes(value)) {
+            return values.filter((item: any) => item !== value)
+        }
+
+        return [...values, value]
+    }
+
+    /**
+     * Gets a sort by name.
+     */
     function getSort(name: string, direction: Direction = null): SortRefiner|undefined {
         return refinements.value.sorts.find(sort => sort.name === name && sort.direction === direction)
     }
 
-    function getFilter(name: string): FilterRefiner|undefined {
+    /**
+     * Gets a filter by name.
+     */
+    function getFilter(name: string): Filter | undefined {
         return refinements.value.filters.find(filter => filter.name === name)
     }
 
+    /**
+     * Gets a match by name.
+     */
     function getMatch(name: string): SearchRefiner|undefined {
         return refinements.value.searches?.find(search => search.name === name)
     }
 
-    function currentSort(): SortRefiner|undefined {
+    /**
+     * The current sort.
+     */
+    function currentSort(): SortRefiner | undefined {
         return refinements.value.sorts.find(({ active }) => active)
     }
 
+    /**
+     * The current filters.
+     */
     function currentFilters(): FilterRefiner[] {
         return refinements.value.filters.filter(({ active }) => active)
     }
 
+    /**
+     * The current searches.
+     */
     function currentSearches(): SearchRefiner[] {
         return refinements.value.searches?.filter(({ active }) => active) ?? []
     }
 
+    /**
+     * Whether the given sort is currently active.
+     */
     function isSorting(name?: string): boolean {
         if (name) {
             return currentSort()?.name === name
@@ -137,6 +210,9 @@ export function useRefine<
         return !!currentSort()
     }
 
+    /**
+     * Whether the given filter is currently active.
+     */
     function isFiltering(name?: string): boolean {
         if (name) {
             return currentFilters().some(filter => filter.name === name)
@@ -145,6 +221,9 @@ export function useRefine<
         return !!currentFilters().length
     }
 
+    /**
+     * Whether the search is currently active, or on a given match.
+     */
     function isSearching(name?: string): boolean {
         if (name) {
             return currentSearches()?.some(search => search.name === name)
@@ -153,19 +232,26 @@ export function useRefine<
         return !!currentSearches()?.length
     }
 
+    /**
+     * Applies the given filter.
+     */
     function applyFilter(name: string, value: any, options: VisitOptions = {}) {
         const filter = getFilter(name)
-
+        
         if (!filter) {
             console.warn(`Filter [${name}] does not exist.`)
             return
         }
-
-        if (['', null].includes(value)) {
-            value = undefined
+        
+        if ('multiple' in filter && filter.multiple) {
+            value = getToggledParameter(value, filter.value)
         }
 
+        value = [getOmittedParameter, getArrayParameter, getStringValue]
+            .reduce((result, transform) => transform(result), value)
+
         router.reload({
+            ...defaultOptions,
             ...options,
             data: {
                 [filter.name]: value
@@ -173,6 +259,9 @@ export function useRefine<
         })
     }
 
+    /**
+     * Applies the given sort.
+     */
     function applySort(name: string, direction: Direction = null, options: VisitOptions = {}) {
         const sort = getSort(name, direction)
 
@@ -190,10 +279,32 @@ export function useRefine<
         })
     }
 
+    /**
+     * Applies a text search.
+     */
+    function applySearch(value: string | null | undefined, options: VisitOptions = {}) {
+        value = [getOmittedParameter, getStringValue]
+            .reduce((result, transform) => transform(result), value)
+
+        router.reload({
+            ...defaultOptions,
+            ...options,
+            data: {
+                [refinements.value.keys.searches]: value
+            }
+        })
+    }
+
+    /**
+     * Clear the given filter.
+     */
     function clearFilter(name: string, options: VisitOptions = {}) {
         applyFilter(name, undefined, options)
     }
 
+    /**
+     * Clear the sort.
+     */
     function clearSort(options: VisitOptions = {}) {
         router.reload({
             ...defaultOptions,
@@ -204,8 +315,9 @@ export function useRefine<
         })
     }
 
-    // function clearM
-
+    /**
+     * Resets all filters, sorts, matches and search.
+     */
     function reset(options: VisitOptions = {}) {
 
         router.reload({
@@ -225,38 +337,56 @@ export function useRefine<
         })
     }
 
-    // function bindFilter<T extends any>(name: string) {
-    //     return {
-    //         'onUpdate:modelValue': (value: any) => {
-    //             applyFilter(name, value);
-    //         },
-    //         modelValue: filterValues.value[name],
-    //     }
-    // }
+    /**
+     * Binds a filter to a form input.
+     */
+    function bindFilter<T extends any>(name: string) {
+        const value = getFilter(name)?.value as T
 
-    function applySearch(value: string | null | undefined, options: VisitOptions = {}) {
-        if (['', null, undefined].includes(value)) {
-            value = undefined
+        return {
+            'onUpdate:modelValue': (value: any) => {
+                applyFilter(name, value);
+            },
+            modelValue: value,
+            value: value,
         }
-
-        // Make it into a valid URL parameter.
-        value = value?.trim().toLowerCase().replace(/\s+/g, '+')
-
-        router.reload({
-            ...options,
-            data: {
-                [refinements.value.keys.searches]: value
-            }
-        })
     }
 
-    function bindSearch() {
+    /**
+     * Binds a set filter option to a checkbox or other form input.
+     */
+    function bindOption<T extends any>(option: Option, filter: string) {
+        return {
+            'onUpdate:modelValue': (checked: boolean | 'indeterminate') => {
+                applyFilter(filter, option.value)
+            },
+            modelValue: option.active,
+            value: option.value as T,
+        }
+    }
+
+	// /**
+	//  * Binds a match option to a checkbox.
+	//  */
+	// function bindMatch(name: string) {
+	// 	return {
+	// 		'onUpdate:modelValue': (checked: boolean | 'indeterminate') => {
+	// 			//
+	// 		},
+	// 		modelValue: '',
+	// 		value: key,
+	// 	}
+	// }
+
+    /**
+     * Binds a search input to a form input.
+     */
+    function bindSearch(options: VisitOptions = {}, searchOptions: SearchOptions = {}) {
         return {
             'onUpdate:modelValue': useDebounceFn((value: any) => {
-                applySearch(value)
-            }, 1000),
-            value: refinements.value.search,
-            modelValue: refinements.value.search
+                applySearch(value, options)
+            }, searchOptions.debounce ?? 750),
+            modelValue: refinements.value.search ?? ''
         }
     }
 
@@ -264,70 +394,21 @@ export function useRefine<
         refinements,
         filters,
         sorts,
-        /**
-		 * Available matches.
-		 */
-        matches: null,
-        /**
-		 * Gets a sort by name.
-		 */
         getSort,
-        /**
-		 * Gets a filter by name.
-		 */
         getFilter,
-        /**
-		 * Gets a match by name.
-		 */
         getMatch,
-        /**
-		 * The current sort.
-		 */
         currentSort,
-        /**
-		 * The current filters.
-		 */
         currentFilters,
-        /**
-		 * The current search matches.
-		 */
         currentSearches,
-        /**
-         * Whether the given filter is currently active.
-         */
-        isFiltering,
-        /**
-         * Whether the given sort is currently active.
-         */
         isSorting,
-        /**
-         * Whether the given match is currently active.
-         */
-        // isMatching,
-        /**
-         * Whether the search is currently active.
-         */
+        isFiltering,
         isSearching,
-		/**
-		 * Applies the given filter.
-		 */
         applyFilter,
-        /**
-		 * Applies the given sort.
-		 */
         applySort,
-        /**
-		 * Clear the given filter.
-		 */
         clearFilter,
-        /**
-		 * Resets all filters, sorts, matches and search..
-		 */
         reset,
-        /**
-		 * Binds a filter to a ref.
-		 */
-        // bindFilter,
+        bindFilter,
+        bindOption,
         // bindMatch,
         bindSearch,
     }

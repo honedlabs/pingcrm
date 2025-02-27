@@ -75,7 +75,7 @@ final class OrganizationTable extends Table
                 'GB' => 'United Kingdom',
                 'AU' => 'Australia',
                 'NZ' => 'New Zealand',
-            ])
+            ])->multiple(),
         ];
     }
 
