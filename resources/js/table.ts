@@ -26,6 +26,12 @@ export type Identifier = string | number
 export interface Column<T extends Record<string, any>> {
     name: keyof T
     label: string
+    type: 'text' | 'number' | 'date' | 'boolean' | string
+    hidden: boolean
+    toggle: boolean
+    icon?: string
+    class?: string
+    meta?: Record<string, any>
     active: boolean
     sort?: {
         direction: Direction
@@ -180,20 +186,46 @@ export function useTable<
         })
     }
 
+    // function toggleColumn(column: Column<U>, options: VisitOptions = {}) {
+    //     router.reload({
+    //         ...options,
+    //         data: {
+    //             [keys.value.columns]: column.active,
+    //         }
+    //     })
+    // }
+
     return reactive({
-        table,
+        /**
+         * The heading columns for the table.
+         */
+        headings: table.value.columns
+            .filter(({ active, hidden }) => active && ! hidden)
+            .map(column => ({
+                ...column,
+                sort: (options: VisitOptions = {}) => sortColumn(column, options)
+            })
+        ),
         /**
          * All of the table's columns
          */
         columns: table.value.columns.map(column => ({
             ...column,
-            sort: (options: VisitOptions = {}) => sortColumn(column, options)
+            // toggle: () => console.log('Hit')
         })),
         /**
          * The data for the table.
          */
         records: table.value.records.map(record => ({
             ...record,
+            default: (options: VisitOptions = {}) => {
+                const defaultAction = record.actions.find((action: InlineAction) => action.default)
+
+                console.log(defaultAction)
+                if (defaultAction) {
+                    executeInlineAction(defaultAction, record, options)
+                }
+            },
             actions: record.actions.map((action: InlineAction) => ({
                 ...action,
                 execute: (options: VisitOptions = {}) => executeInlineAction(action, record, options)

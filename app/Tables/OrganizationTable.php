@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace App\Tables;
 
+use App\Enums\AppIcon;
 use Honed\Table\Table;
 use App\Models\Organization;
 use Honed\Action\BulkAction;
 use Honed\Action\PageAction;
 use Honed\Refine\Sorts\Sort;
 use Honed\Action\InlineAction;
-use Honed\Refine\Filters\CallbackFilter;
 use Honed\Table\Columns\Column;
 use Honed\Table\Filters\Filter;
 use Honed\Table\Columns\KeyColumn;
@@ -18,7 +18,7 @@ use Honed\Refine\Filters\SetFilter;
 use Honed\Table\Columns\DateColumn;
 use Honed\Table\Columns\TextColumn;
 use Honed\Table\Columns\NumberColumn;
-use Illuminate\Contracts\Database\Query\Builder;
+use Honed\Refine\Filters\CallbackFilter;
 
 final class OrganizationTable extends Table
 {
@@ -98,18 +98,31 @@ final class OrganizationTable extends Table
     public function actions(): array
     {
         return [
+            InlineAction::make('view', 'View')
+                ->default()
+                ->icon(AppIcon::View)
+                ->route(fn ($organization) => route('organizations.show', $organization->id)),
+                
             InlineAction::make('edit', 'Edit')
+                ->icon(AppIcon::Edit)
                 ->route(fn ($organization) => route('organizations.edit', $organization->id)),
-            InlineAction::make('delete', 'Delete')
-                ->allow(fn ($organization) => ($organization->id % 2) === 0),
 
-            BulkAction::make('delete', 'Delete'),
+            InlineAction::make('delete', 'Delete')
+                ->icon(AppIcon::Delete)
+                ->allow(fn ($organization) => ($organization->id % 2) === 0)
+                ->action(fn ($organization) => $organization->delete()),
+
+            BulkAction::make('delete', 'Delete')
+                ->icon(AppIcon::Delete),
+
             BulkAction::make('touch')
+                ->icon(AppIcon::Touch)
                 ->action(fn ($organizations) => $organizations
                     ->each(fn ($organization) => $organization->touch())
                 ),
 
             PageAction::make('create')
+                
                 ->route('organizations.create')
 
         ];

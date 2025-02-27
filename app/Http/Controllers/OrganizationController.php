@@ -1,14 +1,17 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers;
 
 use App\Models\Organization;
 use App\Actions\Organization\Edit;
+use App\Actions\Organization\Show;
 use App\Actions\Organization\Index;
 use App\Http\Requests\StoreOrganizationRequest;
 use App\Http\Requests\UpdateOrganizationRequest;
 
-class OrganizationController extends Controller
+final class OrganizationController extends Controller
 {
     /**
      * Display a listing of the resource.
@@ -39,9 +42,11 @@ class OrganizationController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(Organization $organization)
+    public function show(Organization $organization, Show $action)
     {
-        //
+        $this->authorize('view', $organization);
+
+        return $action->handle($organization);
     }
 
     /**

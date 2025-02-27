@@ -2,13 +2,32 @@
 import { Head, Link } from '@inertiajs/vue3'
 import { AppLayout } from '@/Layouts'
 import { Card, CardContent } from '@/components/card'
-import { Table, TableCaption, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/table'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/dropdown-menu'
-import { ChevronDown, ChevronLeft, ChevronRight, Ellipsis } from 'lucide-vue-next'
+import { Table, 
+    TableCaption, 
+    TableHeader, 
+    TableRow, 
+    TableHead, 
+    TableBody, 
+    TableCell 
+} from '@/components/table'
+import { 
+    DropdownMenu, 
+    DropdownMenuContent, 
+    DropdownMenuItem, 
+    DropdownMenuTrigger, 
+    DropdownMenuCheckboxItem 
+} from '@/components/dropdown-menu'
+import { 
+    Icon,
+    ChevronDown, 
+    ChevronLeft, 
+    ChevronRight, 
+    Ellipsis 
+} from 'lucide-vue-next'
 import { Input } from '@/components/input'
 import { Button } from '@/components/button'
 import { Checkbox } from '@/components/checkbox'
-import { VisuallyHidden } from 'reka-ui'
+import { Primitive, VisuallyHidden } from 'reka-ui'
 import { useTable } from '@/table'
 import { ref } from 'vue'
 import { Label } from '@/components/label'
@@ -24,17 +43,6 @@ interface Props {
 const props = defineProps<Props>()
 
 const table = useTable(props, 'organizations')
-
-const test = ref<any>(false)
-
-// const binding = {
-//     'onUpdate:modelValue': (value: boolean | 'indeterminate') => {
-//         console.log('Checked:', value)
-//         test.value = value
-//     },
-//     state: test.value,
-//     modelValue: test.value,
-// }
 
 </script>
 
@@ -92,14 +100,20 @@ const test = ref<any>(false)
                     </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                    <DropdownMenuItem v-for="column in organizations.columns" :key="column.name">
+                    <DropdownMenuCheckboxItem v-for="column in table.columns"
+                        :key="column.name"
+                        :model-value="column.active"
+                        :disabled="! column.toggle"
+                    >
                         {{ column.label }}
-                    </DropdownMenuItem>
+                    </DropdownMenuCheckboxItem>
                 </DropdownMenuContent>
             </DropdownMenu>
         </div>
         <Table>
-            <TableCaption class="sr-only">A list of your recent invoices.</TableCaption>
+            <TableCaption class="sr-only">
+                A list of your organizations.
+            </TableCaption>
             <TableHeader>
                 <TableRow>
                     <TableHead>
@@ -107,7 +121,7 @@ const test = ref<any>(false)
                             <Checkbox v-bind="table.bulk.bindAll()"  />
                         </div>
                     </TableHead>
-                    <TableHead v-for="column in organizations.columns" :key="column.name">
+                    <TableHead v-for="column in table.headings" :key="column.name">
                         {{ column.label }}
                     </TableHead>
                     <TableHead>
@@ -116,19 +130,22 @@ const test = ref<any>(false)
                 </TableRow>
             </TableHeader>
             <TableBody>
-                <TableRow v-for="row in table.records" :key="row.id">
-                    <TableCell>
+                <TableRow v-for="row in table.records" 
+                    :key="row.id"
+                    @click="row.default()"
+                >
+                    <TableCell @click.stop>
                         <div class="flex items-center">
                             <Checkbox v-bind="table.bulk.bind(row.id)" />
                         </div>
                     </TableCell>
-                    <TableCell v-for="column in table.columns" 
+                    <TableCell v-for="column in table.headings" 
                         :key="column.name" 
                         class="font-medium"
                     >
                         {{ row[column.name] }}
                     </TableCell>
-                    <TableCell>
+                    <TableCell @click.stop>
                         <DropdownMenu :modal="false">
                             <DropdownMenuTrigger>
                                 <div class="flex items-center">
@@ -142,6 +159,7 @@ const test = ref<any>(false)
                                 <DropdownMenuItem v-for="action in row.actions"
                                     @click="action.execute()"
                                 >
+                                    <!-- <component :is="action.icon" /> -->
                                     {{ action.label }}
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
