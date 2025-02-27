@@ -25,7 +25,6 @@ final class OrganizationTable extends Table
     public $toggle = true;
 
     // public $remember = true;
-
     public $pagination = [5, 10, 25, 50, 100];
 
     public function resource()
@@ -43,8 +42,13 @@ final class OrganizationTable extends Table
     {
         return [
             KeyColumn::make('id'),
-            TextColumn::make('name')->sortable()->searchable()->always(),
-            TextColumn::make('email')->sortable()->searchable(),
+            TextColumn::make('name')
+                ->sortable()
+                ->searchable()
+                ->always(),
+            TextColumn::make('email')
+                ->sortable()
+                ->searchable(),
             TextColumn::make('phone'),
             TextColumn::make('address'),
             NumberColumn::make('contacts_count', 'Contacts')->sortable(),
@@ -64,9 +68,6 @@ final class OrganizationTable extends Table
     public function filters(): array
     {
         return [
-            CallbackFilter::make('contacts_count', 'Min contacts')->label('Contacts')->callback(function ($query) {
-                return $query->where('contacts_count', '>', 0);
-            }),
             SetFilter::make('country')->options([
                 'US' => 'United States',
                 'CA' => 'Canada',

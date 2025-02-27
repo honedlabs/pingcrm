@@ -1,7 +1,7 @@
 import { computed, reactive, ref, type Ref } from "vue"
 import { router } from "@inertiajs/vue3"
 import type { VisitOptions } from "@inertiajs/core"
-import { toReactive } from "@vueuse/core"
+import { toReactive, useDebounceFn } from "@vueuse/core"
 
 export interface Refiner {
     name: string
@@ -81,17 +81,29 @@ export function useRefine<
 >(props: T, key: K, defaultOptions: VisitOptions = {}) {
     const refinements = computed(() => props[key] as Refine)
 
-    const parameters = ref<Record<string, any>>({
-        ...Object.fromEntries(
-            refinements.value.filters.map(filter => [filter.name, filter.value])
-        ),
-        [refinements.value.keys.searches]: refinements.value.search
-})
-
     // defaultOptions = {
     //     ...defaultOptions,
     //     only: [...((defaultOptions.only ?? []) as string[]), key.toString()]
     // }
+
+    /**
+     * The available filters.
+     */
+    const filters = computed(() => refinements.value.filters.map(filter => ({
+        ...filter,
+        apply: (value: T, options: VisitOptions = {}) => applyFilter(filter.name, value, options),
+        clear: (options: VisitOptions = {}) => clearFilter(filter.name, options),
+        // bind: () => bindFilter(filter.name)
+    })))
+
+    /**
+     * The available sorts.
+     */
+    const sorts = computed(() => refinements.value.sorts.map(sort => ({
+        ...sort,
+        apply: (options: VisitOptions = {}) => applySort(sort.name, sort.direction, options),
+        // clear: (options: VisitOptions = {}) => clearSort(sort.name, options),
+    })))
 
     function getSort(name: string, direction: Direction = null): SortRefiner|undefined {
         return refinements.value.sorts.find(sort => sort.name === name && sort.direction === direction)
@@ -170,6 +182,7 @@ export function useRefine<
         }
 
         router.reload({
+            ...defaultOptions,
             ...options,
             data: {
                 [refinements.value.keys.sorts]: sort.next
@@ -183,6 +196,7 @@ export function useRefine<
 
     function clearSort(options: VisitOptions = {}) {
         router.reload({
+            ...defaultOptions,
             ...options,
             data: {
                 [refinements.value.keys.sorts]: null
@@ -193,10 +207,20 @@ export function useRefine<
     // function clearM
 
     function reset(options: VisitOptions = {}) {
+
         router.reload({
+            ...defaultOptions,
             ...options,
             data: {
-
+                [refinements.value.keys.searches]: undefined,
+                [refinements.value.keys.sorts]: undefined,
+                ...Object.fromEntries(
+                    refinements.value.filters.map(filter => [filter.name, undefined])
+                ),
+                ...(refinements.value.keys.matches 
+                    ? { [refinements.value.keys.matches]: undefined } 
+                    : {}
+                )
             }
         })
     }
@@ -210,24 +234,36 @@ export function useRefine<
     //     }
     // }
 
+    function applySearch(value: string | null | undefined, options: VisitOptions = {}) {
+        if (['', null, undefined].includes(value)) {
+            value = undefined
+        }
+
+        // Make it into a valid URL parameter.
+        value = value?.trim().toLowerCase().replace(/\s+/g, '+')
+
+        router.reload({
+            ...options,
+            data: {
+                [refinements.value.keys.searches]: value
+            }
+        })
+    }
+
+    function bindSearch() {
+        return {
+            'onUpdate:modelValue': useDebounceFn((value: any) => {
+                applySearch(value)
+            }, 1000),
+            value: refinements.value.search,
+            modelValue: refinements.value.search
+        }
+    }
+
     return {
-        /**
-		 * Available filters.
-		 */
-        filters: reactive(refinements.value.filters.map(filter => ({
-            ...filter,
-            apply: (value: T, options: VisitOptions = {}) => applyFilter(filter.name, value, options),
-            clear: (options: VisitOptions = {}) => clearFilter(filter.name, options),
-            // bind: () => bindFilter(filter.name)
-        }))),
-        /**
-		 * Available sorts.
-		 */
-        sorts: reactive(refinements.value.sorts.map(sort => ({
-            ...sort,
-            apply: (options: VisitOptions = {}) => applySort(sort.name, sort.direction, options),
-            // clear: (options: VisitOptions = {}) => clearSort(sort.name, options),
-        }))),
+        refinements,
+        filters,
+        sorts,
         /**
 		 * Available matches.
 		 */
@@ -293,6 +329,6 @@ export function useRefine<
 		 */
         // bindFilter,
         // bindMatch,
-        // bindSearch,
+        bindSearch,
     }
 }

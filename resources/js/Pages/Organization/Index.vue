@@ -15,7 +15,10 @@ import {
     DropdownMenuContent, 
     DropdownMenuItem, 
     DropdownMenuTrigger, 
-    DropdownMenuCheckboxItem 
+    DropdownMenuCheckboxItem,
+    DropdownMenuSub,
+    DropdownMenuSubTrigger,
+    DropdownMenuSubContent,
 } from '@/components/dropdown-menu'
 import { 
     Icon,
@@ -51,9 +54,8 @@ const table = useTable(props, 'organizations')
 <template>
     <Head title="Organizations" />
     <Card>
-        {{ table.selection }}
         <div class="py-4 px-2 flex gap-x-2">
-            <Input placeholder="Search" />
+            <Input placeholder="Search" v-bind="table.bindSearch()" />
             <DropdownMenu :modal="false">
                 <DropdownMenuTrigger as-child>
                     <Button variant="outline" :disabled="!table.hasSelected">
@@ -89,11 +91,16 @@ const table = useTable(props, 'organizations')
                     </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                    <DropdownMenuItem v-for="filter in table.filters"
-                        @click="filter.apply"
-                    >
-                        {{ filter.label }}
-                    </DropdownMenuItem>
+                    <DropdownMenuSub>
+                        <DropdownMenuSubTrigger>
+                            Countries
+                        </DropdownMenuSubTrigger>
+                        <DropdownMenuSubContent align="start">
+                            <DropdownMenuCheckboxItem>
+                                
+                            </DropdownMenuCheckboxItem>
+                        </DropdownMenuSubContent>
+                    </DropdownMenuSub>
                 </DropdownMenuContent>
             </DropdownMenu>
             <DropdownMenu :modal="false">
@@ -125,7 +132,10 @@ const table = useTable(props, 'organizations')
                             <Checkbox v-bind="table.bindAll()"  />
                         </div>
                     </TableHead>
-                        <TableHead v-for="col in table.headings" :key="col.name">
+                        <TableHead v-for="col in table.headings" 
+                            :key="col.name"
+                            :class="col.class"
+                        >
                             <span class="flex items-center gap-x-2">
                                 {{ col.label }}
                                 <button class="inline-flex justify-center items-center" v-if="col.sort" @click="col.applySort()">
@@ -217,6 +227,6 @@ const table = useTable(props, 'organizations')
                 </VisuallyHidden>
             </Button>
         </Block>
-        {{ table.paginator }}
+        <!-- {{ table.paginator }} -->
     </Card>
 </template>

@@ -118,7 +118,7 @@ export function useTable<
         .filter(({ active, hidden }) => active && ! hidden)
         .map(column => ({
             ...column,
-            applySort: (options: VisitOptions = {}) => sortColumn(column, options)
+            applySort: (options: VisitOptions = {}) => sortColumn(column, options),
         }))
     )
 
@@ -126,6 +126,7 @@ export function useTable<
      * All of the table's columns
      */
     const columns = computed(() => table.value.columns
+        .filter(({ hidden }) => ! hidden)
         .map(column => ({
             ...column,
             toggleColumn: (options: VisitOptions = {}) => toggleColumn(column, options)
