@@ -79,33 +79,55 @@ export function useBulk<T = any>() {
 		return selection.value.all && selection.value.except.size === 0
 	})
 
+    /**
+     * Determine whether there are any records selected.
+     */
+    const hasSelected = computed(() => {
+        return selection.value.only.size > 0 || allSelected.value
+    })
+
 	/**
 	 * Binds a checkbox's properties.
 	 */
 	function bind(key: T) {
 		return {
-			onChange: (event: Event) => {
-				const target = event.target as HTMLInputElement
-				if (target.checked) {
-					select(target.value as T)
+			'onUpdate:modelValue': (checked: boolean | 'indeterminate') => {
+				if (checked) {
+					select(key)
 				} else {
-					deselect(target.value as T)
+					deselect(key)
 				}
 			},
-			checked: selected(key),
+			modelValue: selected(key),
 			value: key,
 		}
 	}
 
+    function bindAll() {
+        return {
+            'onUpdate:modelValue': (checked: boolean | 'indeterminate') => {
+                console.log('Checked:', checked)
+                if (checked) {
+                    selectAll()
+                } else {
+                    deselectAll()
+                }
+            },
+            modelValue: allSelected.value,
+        }
+    }
+
 	return {
 		allSelected,
+		selection,
+        hasSelected,
 		selectAll,
 		deselectAll,
 		select,
 		deselect,
 		toggle,
 		selected,
-		selection,
 		bind,
+        bindAll,
 	}
 }

@@ -1,14 +1,18 @@
 <script setup lang="ts">
-import { Head } from '@inertiajs/vue3'
+import { Head, Link } from '@inertiajs/vue3'
 import { AppLayout } from '@/Layouts'
 import { Card, CardContent } from '@/components/card'
 import { Table, TableCaption, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/table'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/dropdown-menu'
-import { Ellipsis } from 'lucide-vue-next'
+import { ChevronDown, ChevronLeft, ChevronRight, Ellipsis } from 'lucide-vue-next'
 import { Input } from '@/components/input'
 import { Button } from '@/components/button'
 import { Checkbox } from '@/components/checkbox'
 import { VisuallyHidden } from 'reka-ui'
+import { useTable } from '@/table'
+import { ref } from 'vue'
+import { Label } from '@/components/label'
+import { Block } from '@/components/block'
 
 defineOptions({ layout: AppLayout })
 
@@ -17,8 +21,20 @@ interface Props {
     
 }
 
-const { organizations } = defineProps<Props>()
+const props = defineProps<Props>()
 
+const table = useTable(props, 'organizations')
+
+const test = ref<any>(false)
+
+// const binding = {
+//     'onUpdate:modelValue': (value: boolean | 'indeterminate') => {
+//         console.log('Checked:', value)
+//         test.value = value
+//     },
+//     state: test.value,
+//     modelValue: test.value,
+// }
 
 </script>
 
@@ -27,9 +43,20 @@ const { organizations } = defineProps<Props>()
     <Card>
         <div class="py-4 px-2 flex gap-x-2">
             <Input placeholder="Search" />
-            <Button variant="outline">
-                Actions
-            </Button>
+            <DropdownMenu :modal="false">
+                <DropdownMenuTrigger as-child>
+                    <Button variant="outline" :disabled="!table.bulk.hasSelected">
+                        Actions
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                    <DropdownMenuItem v-for="action in table.bulkActions"
+                        @click="action.execute()"
+                    >
+                        {{ action.label }}
+                    </DropdownMenuItem>
+                </DropdownMenuContent>
+            </DropdownMenu>
             <DropdownMenu :modal="false">
                 <DropdownMenuTrigger as-child>
                     <Button variant="outline">
@@ -37,14 +64,27 @@ const { organizations } = defineProps<Props>()
                     </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                    <DropdownMenuItem>
-                        Name
+                    <DropdownMenuItem v-for="sort in table.sorts"
+                        @click="sort.apply"
+                    >
+                        {{ sort.label }} {{ sort.active }}
                     </DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>
-            <Button variant="outline">
-                Filter
-            </Button>
+            <DropdownMenu :modal="false">
+                <DropdownMenuTrigger as-child>
+                    <Button variant="outline">
+                        Filter
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                    <DropdownMenuItem v-for="filter in table.filters"
+                        @click="filter.apply"
+                    >
+                        {{ filter.label }}
+                    </DropdownMenuItem>
+                </DropdownMenuContent>
+            </DropdownMenu>
             <DropdownMenu :modal="false">
                 <DropdownMenuTrigger as-child>
                     <Button variant="outline">
@@ -64,7 +104,7 @@ const { organizations } = defineProps<Props>()
                 <TableRow>
                     <TableHead>
                         <div class="flex items-center">
-                            <Checkbox />
+                            <Checkbox v-bind="table.bulk.bindAll()"  />
                         </div>
                     </TableHead>
                     <TableHead v-for="column in organizations.columns" :key="column.name">
@@ -76,13 +116,13 @@ const { organizations } = defineProps<Props>()
                 </TableRow>
             </TableHeader>
             <TableBody>
-                <TableRow v-for="row in organizations.records" :key="row.id">
+                <TableRow v-for="row in table.records" :key="row.id">
                     <TableCell>
                         <div class="flex items-center">
-                            <Checkbox />
+                            <Checkbox v-bind="table.bulk.bind(row.id)" />
                         </div>
                     </TableCell>
-                    <TableCell v-for="column in organizations.columns" 
+                    <TableCell v-for="column in table.columns" 
                         :key="column.name" 
                         class="font-medium"
                     >
@@ -99,8 +139,10 @@ const { organizations } = defineProps<Props>()
                                 </VisuallyHidden>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                                <DropdownMenuItem>
-                                    {{ row.actions.length }}
+                                <DropdownMenuItem v-for="action in row.actions"
+                                    @click="action.execute()"
+                                >
+                                    {{ action.label }}
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
@@ -108,5 +150,48 @@ const { organizations } = defineProps<Props>()
                 </TableRow>
             </TableBody>
         </Table>
+        <Block variant="inline">
+            <Label for="rows-per-page">
+                Rows per page
+            </Label>
+            <DropdownMenu :modal="false">
+                <DropdownMenuTrigger as-child>
+                    <Button variant="outline" id="rows-per-page" class="inline-flex">
+                        {{ table.currentPage?.value }}
+                        <ChevronDown class="size-4" />
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                    <DropdownMenuItem v-for="item in table.pages"
+                        @click="item.apply()"
+                    >
+                        {{ item.value }}
+                    </DropdownMenuItem>
+                </DropdownMenuContent>
+            </DropdownMenu>
+            <Button size="sm" 
+                variant="outline" 
+                :as="Link"
+                :href="table.paginator.prev"
+                :disabled="!table.paginator.prev"
+            >
+                <ChevronLeft class="size-4" />
+                <VisuallyHidden>
+                    Previous page
+                </VisuallyHidden>
+            </Button>
+            <Button size="sm" 
+                variant="outline" 
+                :as="Link"
+                :href="table.paginator.next"
+                :disabled="!table.paginator.next"
+            >
+                <ChevronRight class="size-4" />
+                <VisuallyHidden>
+                    Next page
+                </VisuallyHidden>
+            </Button>
+            {{ !table.paginator.prev }}
+        </Block>
     </Card>
 </template>

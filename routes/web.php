@@ -8,8 +8,11 @@ use App\Http\Controllers\ContactController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\OrganizationController;
+use Honed\Table\TableServiceProvider;
 
 Route::middleware(['auth', 'nav:app'])->group(function () {
+    Route::table();
+    
     Route::get('/', [DashboardController::class, 'show'])->name('dashboard.show');
     Route::resource('users', UserController::class);
     Route::resource('organizations', OrganizationController::class);

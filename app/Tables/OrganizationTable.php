@@ -10,6 +10,7 @@ use Honed\Action\BulkAction;
 use Honed\Action\PageAction;
 use Honed\Refine\Sorts\Sort;
 use Honed\Action\InlineAction;
+use Honed\Refine\Filters\CallbackFilter;
 use Honed\Table\Columns\Column;
 use Honed\Table\Filters\Filter;
 use Honed\Table\Columns\KeyColumn;
@@ -61,6 +62,9 @@ final class OrganizationTable extends Table
     public function filters(): array
     {
         return [
+            CallbackFilter::make('contacts_count', 'Min contacts')->label('Contacts')->callback(function ($query) {
+                return $query->where('contacts_count', '>', 0);
+            }),
             SetFilter::make('country')->options([
                 'US' => 'United States',
                 'CA' => 'Canada',
@@ -82,6 +86,7 @@ final class OrganizationTable extends Table
         return [
             Sort::make('city', 'City A-Z')->asc(),
             Sort::make('city', 'City Z-A')->desc(),
+            Sort::make('created_at')->default()
         ];
     }
 
