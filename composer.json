@@ -8,7 +8,7 @@
     "require": {
         "php": "^8.2",
         "honed/action": "^0.2.0",
-        "honed/command": "^0.1.0",
+        "honed/command": "^0.1.1",
         "honed/core": "^0.7.0",
         "honed/crumb": "^0.2.0",
         "honed/modal": "^0.1.0",

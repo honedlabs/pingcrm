@@ -3,6 +3,7 @@ import './bootstrap';
 
 import { createInertiaApp } from '@inertiajs/vue3';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
+import { modal } from '@honed/modal';
 import { createApp, DefineComponent, h } from 'vue';
 import { ZiggyVue } from '../../vendor/tightenco/ziggy';
 
@@ -19,6 +20,13 @@ createInertiaApp({
         createApp({ render: () => h(App, props) })
             .use(plugin)
             .use(ZiggyVue)
+            .use(modal, {
+                resolve: (name: string) =>
+                    resolvePageComponent(
+                        `./Modals/${name}.vue`,
+                        import.meta.glob('./Modals/**/*.vue'),
+                    ),
+            })
             .mount(el);
     },
     progress: {

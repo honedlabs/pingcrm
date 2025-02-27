@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "35e8e9b40c1f940cc675a0f189605523",
+    "content-hash": "ba1cd3789eb1ab2c46fdb0ab249a386b",
     "packages": [
         {
             "name": "brick/math",
@@ -1353,16 +1353,16 @@
         },
         {
             "name": "honed/command",
-            "version": "v0.1.0",
+            "version": "v0.1.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/honedlabs/command.git",
-                "reference": "5713318f0fb854a1c3a6b233667bab8b5d890ec8"
+                "reference": "06c2c8fade178aaa8dae50e74f6f2acfaeb5cfee"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/honedlabs/command/zipball/5713318f0fb854a1c3a6b233667bab8b5d890ec8",
-                "reference": "5713318f0fb854a1c3a6b233667bab8b5d890ec8",
+                "url": "https://api.github.com/repos/honedlabs/command/zipball/06c2c8fade178aaa8dae50e74f6f2acfaeb5cfee",
+                "reference": "06c2c8fade178aaa8dae50e74f6f2acfaeb5cfee",
                 "shasum": ""
             },
             "require": {
@@ -1417,9 +1417,9 @@
                 "laravel"
             ],
             "support": {
-                "source": "https://github.com/honedlabs/command/tree/v0.1.0"
+                "source": "https://github.com/honedlabs/command/tree/v0.1.1"
             },
-            "time": "2025-02-25T03:41:24+00:00"
+            "time": "2025-02-27T00:32:50+00:00"
         },
         {
             "name": "honed/core",

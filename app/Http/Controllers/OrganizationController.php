@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Organization;
+use App\Actions\Organization\Edit;
 use App\Actions\Organization\Index;
 use App\Http\Requests\StoreOrganizationRequest;
 use App\Http\Requests\UpdateOrganizationRequest;
@@ -46,9 +47,11 @@ class OrganizationController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(Organization $organization)
+    public function edit(Organization $organization, Edit $action)
     {
-        //
+        $this->authorize('update', $organization);
+
+        return $action->handle($organization);
     }
 
     /**
