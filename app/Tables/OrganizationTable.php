@@ -24,6 +24,8 @@ final class OrganizationTable extends Table
 {
     public $toggle = true;
 
+    // public $remember = true;
+
     public $pagination = [5, 10, 25, 50, 100];
 
     public function resource()
@@ -113,7 +115,8 @@ final class OrganizationTable extends Table
                 ->action(fn ($organization) => $organization->delete()),
 
             BulkAction::make('delete', 'Delete')
-                ->icon(AppIcon::Delete),
+                ->icon(AppIcon::Delete)
+                ->action(fn ($organization) => $organization->delete()),
 
             BulkAction::make('touch')
                 ->icon(AppIcon::Touch)

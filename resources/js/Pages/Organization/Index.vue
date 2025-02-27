@@ -22,7 +22,9 @@ import {
     ChevronDown, 
     ChevronLeft, 
     ChevronRight, 
-    Ellipsis 
+    Ellipsis, 
+    ChevronsUpDown,
+    GripVertical
 } from 'lucide-vue-next'
 import { Input } from '@/components/input'
 import { Button } from '@/components/button'
@@ -104,7 +106,8 @@ const table = useTable(props, 'organizations')
                         :key="column.name"
                         :model-value="column.active"
                         :disabled="! column.toggle"
-                    >
+                        @click="column.toggleColumn()"
+                        >
                         {{ column.label }}
                     </DropdownMenuCheckboxItem>
                 </DropdownMenuContent>
@@ -121,9 +124,16 @@ const table = useTable(props, 'organizations')
                             <Checkbox v-bind="table.bulk.bindAll()"  />
                         </div>
                     </TableHead>
-                    <TableHead v-for="column in table.headings" :key="column.name">
-                        {{ column.label }}
-                    </TableHead>
+                        <TableHead v-for="col in table.headings" :key="col.name">
+                            <span class="flex items-center gap-x-2">
+                                {{ col.label }}
+                                <button class="inline-flex justify-center items-center" v-if="col.sort" @click="col.applySort()">
+                                    <ChevronUp v-if="col.sort.direction === 'asc'" class="size-4" />
+                                    <ChevronDown v-else-if="col.sort.direction === 'desc'" class="size-4" />
+                                    <ChevronsUpDown v-else class="size-4" />
+                                </button>
+                            </span>
+                        </TableHead>
                     <TableHead>
                         Actions
                     </TableHead>

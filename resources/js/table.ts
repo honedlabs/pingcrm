@@ -8,7 +8,9 @@ import type { Direction, Refine, Keys as RefineKeys } from "./refine"
 
 export interface Paginator<T> {
     data: T[]
-  // Add other paginator properties as needed
+    prev: string | null
+    next: string | null
+    // Add other paginator properties as needed
 }
 
 export interface SimplePaginator<T> extends Paginator<T> {
@@ -82,9 +84,7 @@ export interface TableOptions<T extends Record<string, any>> {
 
 export function useTable<
     T extends object,
-    K extends {
-        [K in keyof T]: T[K] extends any ? K : never
-    }[keyof T],
+    K extends T[keyof T] extends Refine ? keyof T : never,
     U extends Record<string, any> = any,
     V extends 'cursor' | 'length-aware' | 'simple' | 'collection' = 'length-aware',
 >(
@@ -93,12 +93,77 @@ export function useTable<
     tableOptions: TableOptions<U> = {}
 ) {
     const table = computed(() => props[key] as Table<U, V>)
-
     const bulk = useBulk()
-
     const refine = useRefine<T, K>(props, key)
-
     const keys = computed(() => table.value.keys)
+    
+    /**
+     * The heading columns for the table.
+     */
+    const headings = computed(() => table.value.columns
+        .filter(({ active, hidden }) => active && ! hidden)
+        .map(column => ({
+            ...column,
+            applySort: (options: VisitOptions = {}) => sortColumn(column, options)
+        }))
+    )
+
+    /**
+     * All of the table's columns
+     */
+    const columns = computed(() => table.value.columns
+        .map(column => ({
+            ...column,
+            toggleColumn: (options: VisitOptions = {}) => toggleColumn(column, options)
+        }))
+    )
+
+    /**
+     * The records of the table.
+     */
+    const records = computed(() => table.value.records.map(record => ({
+        ...record,
+        default: (options: VisitOptions = {}) => {
+            const defaultAction = record.actions.find((action: InlineAction) => action.default)
+
+            if (defaultAction) {
+                executeInlineAction(defaultAction, record, options)
+            }
+        },
+        actions: record.actions.map((action: InlineAction) => ({
+            ...action,
+            execute: (options: VisitOptions = {}) => executeInlineAction(action, record, options)
+        }))
+    })))
+
+    /**
+     * The available bulk actions.
+     */
+    const bulkActions = computed(() => table.value.actions.bulk.map(action => ({
+        ...action,
+        execute: (options: VisitOptions = {}) => executeBulkAction(action, options)
+    })))
+
+    /**
+     * The available page actions.
+     */
+    const pageActions = computed(() => table.value.actions.page.map(action => ({
+        ...action,
+        execute: (options: VisitOptions = {}) => executePageAction(action, options)
+    })))
+    
+    /**
+     * Available number of records to display per page.
+     */
+    const pages = computed(() => table.value.pages.map(page => ({
+        ...page,
+        apply: (options: VisitOptions = {}) => applyPage(page, options)
+    })))
+
+    /**
+     * The paginator metadata.
+     */
+    const paginator = computed(() => table.value.meta)
 
     function visitAction(action: BaseAction, options: VisitOptions = {}) {
         router.visit(action.href!, {
@@ -117,7 +182,6 @@ export function useTable<
     
     function executeInlineAction(action: InlineAction, record: U, options: VisitOptions = {}) {
         if (action.href) {
-            console.log('Hits')
             visitAction(action, options)
             return
         }
@@ -135,17 +199,32 @@ export function useTable<
     
     function executeBulkAction(action: BulkAction, options: VisitOptions = {}) {
         if (action.href) {
+            console.log("VISIT")
             visitAction(action, options)
             return
         }
 
         if (action.action) {
+            console.log('EXECUTE')
             executeAction(action, {
                 type: 'bulk',
                 all: bulk.selection.value.all,
                 only: Array.from(bulk.selection.value.only),
                 except: Array.from(bulk.selection.value.except),
-            }, options)
+            }, {
+                ...options,
+                onSuccess: (page) => {
+                    options.onSuccess?.(page)
+                    
+                    if (!action.keepSelected) {
+                        bulk.deselectAll()
+                    }
+                },
+                onError: (error) => {
+                    console.log(error)
+                }
+            })
+            return
         }
     }
     
@@ -186,80 +265,35 @@ export function useTable<
         })
     }
 
-    // function toggleColumn(column: Column<U>, options: VisitOptions = {}) {
-    //     router.reload({
-    //         ...options,
-    //         data: {
-    //             [keys.value.columns]: column.active,
-    //         }
-    //     })
-    // }
+    function toggleColumn(column: Column<U>, options: VisitOptions = {}) {
+        let params = headings.value.map(({ name }) => name)
+
+        if (params.includes(column.name)) {
+            params = params.filter((name) => name !== column.name)
+        } else {
+            params.push(column.name)
+        }
+
+        router.reload({
+            ...options,
+            data: {
+                [keys.value.columns]: params.join(','),
+            },
+        })
+    }
 
     return reactive({
-        /**
-         * The heading columns for the table.
-         */
-        headings: table.value.columns
-            .filter(({ active, hidden }) => active && ! hidden)
-            .map(column => ({
-                ...column,
-                sort: (options: VisitOptions = {}) => sortColumn(column, options)
-            })
-        ),
-        /**
-         * All of the table's columns
-         */
-        columns: table.value.columns.map(column => ({
-            ...column,
-            // toggle: () => console.log('Hit')
-        })),
-        /**
-         * The data for the table.
-         */
-        records: table.value.records.map(record => ({
-            ...record,
-            default: (options: VisitOptions = {}) => {
-                const defaultAction = record.actions.find((action: InlineAction) => action.default)
-
-                console.log(defaultAction)
-                if (defaultAction) {
-                    executeInlineAction(defaultAction, record, options)
-                }
-            },
-            actions: record.actions.map((action: InlineAction) => ({
-                ...action,
-                execute: (options: VisitOptions = {}) => executeInlineAction(action, record, options)
-            }))
-        })),
-        /**
-         * Available bulk actions.
-         */
-        bulkActions: table.value.actions.bulk.map(action => ({
-            ...action,
-            execute: (options: VisitOptions = {}) => executeBulkAction(action, options)
-        })),
-        /**
-         * Available page actions.
-         */
-        pageActions: table.value.actions.page.map(action => ({
-            ...action,
-            execute: (options: VisitOptions = {}) => executePageAction(action, options)
-        })),
-        /**
-         * Available number of records to display per page.
-         */
-        pages: table.value.pages.map(page => ({
-            ...page,
-            apply: (options: VisitOptions = {}) => applyPage(page, options)
-        })),
+        headings,
+        columns,
+        records,
+        bulkActions,
+        pageActions,
+        pages,
         /**
          * The current number of records to display per page.
          */
         currentPage: computed(() => table.value.pages.find(({ active }) => active)),
-        /**
-         * The paginator metadata.
-         */
-        paginator: computed(() => table.value.meta),
+        paginator,
         bulk,
         ...refine
     })
