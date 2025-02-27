@@ -51,11 +51,12 @@ const table = useTable(props, 'organizations')
 <template>
     <Head title="Organizations" />
     <Card>
+        {{ table.selection }}
         <div class="py-4 px-2 flex gap-x-2">
             <Input placeholder="Search" />
             <DropdownMenu :modal="false">
                 <DropdownMenuTrigger as-child>
-                    <Button variant="outline" :disabled="!table.bulk.hasSelected">
+                    <Button variant="outline" :disabled="!table.hasSelected">
                         Actions
                     </Button>
                 </DropdownMenuTrigger>
@@ -121,7 +122,7 @@ const table = useTable(props, 'organizations')
                 <TableRow>
                     <TableHead>
                         <div class="flex items-center">
-                            <Checkbox v-bind="table.bulk.bindAll()"  />
+                            <Checkbox v-bind="table.bindAll()"  />
                         </div>
                     </TableHead>
                         <TableHead v-for="col in table.headings" :key="col.name">
@@ -146,14 +147,14 @@ const table = useTable(props, 'organizations')
                 >
                     <TableCell @click.stop>
                         <div class="flex items-center">
-                            <Checkbox v-bind="table.bulk.bind(row.id)" />
+                            <Checkbox v-bind="row.bind()" />
                         </div>
                     </TableCell>
                     <TableCell v-for="column in table.headings" 
                         :key="column.name" 
                         class="font-medium"
                     >
-                        {{ row[column.name] }}
+                        {{ row[column.name] }} {{ row.id }}
                     </TableCell>
                     <TableCell @click.stop>
                         <DropdownMenu :modal="false">
@@ -199,8 +200,6 @@ const table = useTable(props, 'organizations')
             </DropdownMenu>
             <Button size="sm" 
                 variant="outline" 
-                :as="Link"
-                :href="table.paginator.prev"
                 :disabled="!table.paginator.prev"
             >
                 <ChevronLeft class="size-4" />
@@ -210,8 +209,6 @@ const table = useTable(props, 'organizations')
             </Button>
             <Button size="sm" 
                 variant="outline" 
-                :as="Link"
-                :href="table.paginator.next"
                 :disabled="!table.paginator.next"
             >
                 <ChevronRight class="size-4" />
@@ -219,7 +216,7 @@ const table = useTable(props, 'organizations')
                     Next page
                 </VisuallyHidden>
             </Button>
-            {{ !table.paginator.prev }}
         </Block>
+        {{ table.paginator }}
     </Card>
 </template>

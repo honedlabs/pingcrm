@@ -6,23 +6,6 @@ import { useBulk } from "./bulk"
 import { useRefine } from "./refine"
 import type { Direction, Refine, Keys as RefineKeys } from "./refine"
 
-export interface Paginator<T> {
-    data: T[]
-    prev: string | null
-    next: string | null
-    // Add other paginator properties as needed
-}
-
-export interface SimplePaginator<T> extends Paginator<T> {
-  // Add simple paginator specific properties
-}
-
-export interface CursorPaginator<T> extends Paginator<T> {
-  // Add cursor paginator specific properties
-}
-
-export type PaginatorKind = 'cursor' | 'length-aware' | 'simple' | 'collection'
-
 export type Identifier = string | number
 
 export interface Column<T extends Record<string, any>> {
@@ -41,29 +24,60 @@ export interface Column<T extends Record<string, any>> {
     }
 }
 
+export interface Keys extends RefineKeys {
+    record: string
+    records: string
+    columns: string
+    pages: string
+}
+
+export type PaginatorKind = 'cursor' | 'length-aware' | 'simple' | 'collection'
+
+export interface PaginatorLink {
+    url: string | null
+    label: string
+    active: boolean
+}
+
+export interface Paginator {
+    prev: string | null
+    next: string | null
+    perPage: number
+}
+
+export interface CursorPaginator extends Paginator { }
+
+export interface SimplePaginator extends Paginator {
+    current: number
+}
+
+export interface LengthAwarePaginator extends SimplePaginator {
+    total: number
+    from: number
+    to: number
+    first: string
+    last: string
+    links: PaginatorLink[]
+}
+
 export interface Page {
     value: number
     active: boolean
 }
 
-export interface Keys extends RefineKeys {
-    record: string
-    records: string
-    columns: string
-}
-
 export interface Table<
     T extends Record<string, any> = any,
-    U extends 'cursor' | 'length-aware' | 'simple' | 'collection' = 'length-aware',
+    U extends PaginatorKind = 'length-aware',
 > {
     table: string
     records: T[] & { actions: InlineAction[] }
-    meta: Exclude<U extends 'cursor' 
-        ? CursorPaginator<T> 
+    meta: U extends 'length-aware' 
+        ? LengthAwarePaginator
         : (U extends 'simple' 
-            ? SimplePaginator<T> 
-            : Paginator<T>), 'data'
-    >
+            ? SimplePaginator
+            : (U extends 'cursor'
+                ? CursorPaginator
+                : Record<string, any>)), 
     columns: Column<T>[]
     pages: Page[]
     toggle: boolean
@@ -123,6 +137,7 @@ export function useTable<
      */
     const records = computed(() => table.value.records.map(record => ({
         ...record,
+        /** Perform this action when the record is clicked */
         default: (options: VisitOptions = {}) => {
             const defaultAction = record.actions.find((action: InlineAction) => action.default)
 
@@ -130,10 +145,22 @@ export function useTable<
                 executeInlineAction(defaultAction, record, options)
             }
         },
+        /** The actions available for the record */
         actions: record.actions.map((action: InlineAction) => ({
             ...action,
+            /** Executes this action */
             execute: (options: VisitOptions = {}) => executeInlineAction(action, record, options)
-        }))
+        })),
+        /** Selects this record */
+        select: () => bulk.select(getRecordKey(record)),
+        /** Deselects this record */
+        deselect: () => bulk.deselect(getRecordKey(record)),
+        /** Toggles the selection of this record */
+        toggle: () =>bulk.toggle(getRecordKey(record)),
+        /** Determine if the record is selected */
+        selected: bulk.selected(getRecordKey(record)),
+        /** Bind the record to a checkbox */
+        bind: () => bulk.bind(getRecordKey(record)),
     })))
 
     /**
@@ -141,6 +168,7 @@ export function useTable<
      */
     const bulkActions = computed(() => table.value.actions.bulk.map(action => ({
         ...action,
+        /** Executes this bulk action */
         execute: (options: VisitOptions = {}) => executeBulkAction(action, options)
     })))
 
@@ -149,6 +177,7 @@ export function useTable<
      */
     const pageActions = computed(() => table.value.actions.page.map(action => ({
         ...action,
+        /** Executes this page action */
         execute: (options: VisitOptions = {}) => executePageAction(action, options)
     })))
     
@@ -157,14 +186,30 @@ export function useTable<
      */
     const pages = computed(() => table.value.pages.map(page => ({
         ...page,
+        /** Changes the number of records to display per page */
         apply: (options: VisitOptions = {}) => applyPage(page, options)
     })))
+
+    /**
+     * The current number of records to display per page.
+     */
+    const currentPage = computed(() => table.value.pages.find(({ active }) => active))
 
     /**
      * The paginator metadata.
      */
     const paginator = computed(() => table.value.meta)
 
+    /**
+     * Get the identifier of the record.
+     */
+    function getRecordKey(record: U) {
+        return record[keys.value.record] as Identifier
+    }
+
+    /**
+     * Make an Inertia request to the given route.
+     */
     function visitAction(action: BaseAction, options: VisitOptions = {}) {
         router.visit(action.href!, {
             ...options,
@@ -172,6 +217,9 @@ export function useTable<
         })
     }
 
+    /**
+     * Execute an action at the table endpoint.
+     */
     function executeAction(action: BaseAction, data: Record<string, any>, options: VisitOptions = {}) {
         router.post(table.value.endpoint, {
             ...data,
@@ -180,32 +228,39 @@ export function useTable<
         }, options)
     }
     
+    /**
+     * Execute an inline action.
+     */
     function executeInlineAction(action: InlineAction, record: U, options: VisitOptions = {}) {
         if (action.href) {
             visitAction(action, options)
+
             return
         }
         
         if (action.action) {
             executeAction(action, {
                 type: 'inline',
-                id: record[keys.value.record as keyof typeof record] as Identifier,
+                id: getRecordKey(record),
             }, options)
+
             return
         }
         
         tableOptions.recordActions?.[action.name]?.(record)
     }
-    
+
+    /**
+     * Execute a bulk action.
+     */
     function executeBulkAction(action: BulkAction, options: VisitOptions = {}) {
         if (action.href) {
-            console.log("VISIT")
             visitAction(action, options)
+
             return
         }
 
         if (action.action) {
-            console.log('EXECUTE')
             executeAction(action, {
                 type: 'bulk',
                 all: bulk.selection.value.all,
@@ -220,14 +275,15 @@ export function useTable<
                         bulk.deselectAll()
                     }
                 },
-                onError: (error) => {
-                    console.log(error)
-                }
             })
+
             return
         }
     }
     
+    /**
+     * Execute a page action.
+     */
     function executePageAction(action: PageAction, options: VisitOptions = {}) {
         if (action.href) {
             visitAction(action, options)
@@ -242,6 +298,9 @@ export function useTable<
         }
     }
 
+    /**
+     * Apply a new page by changing the number of records to display.
+     */
     function applyPage(page: Page, options: VisitOptions = {}) {
         router.reload({
             ...options,
@@ -252,6 +311,9 @@ export function useTable<
         })
     }
 
+    /**
+     * Apply a column sort.
+     */
     function sortColumn(column: Column<U>, options: VisitOptions = {}) {
         if (! column.sort) {
             return
@@ -265,9 +327,13 @@ export function useTable<
         })
     }
 
+    /**
+     * Toggle a column's visibility.
+     */
     function toggleColumn(column: Column<U>, options: VisitOptions = {}) {
         let params = headings.value.map(({ name }) => name)
 
+        // Toggle the column's visibility in the list of active columns.
         if (params.includes(column.name)) {
             params = params.filter((name) => name !== column.name)
         } else {
@@ -289,11 +355,31 @@ export function useTable<
         bulkActions,
         pageActions,
         pages,
-        /**
-         * The current number of records to display per page.
-         */
-        currentPage: computed(() => table.value.pages.find(({ active }) => active)),
+        currentPage,
         paginator,
+        /** Select all records */
+        selectAll: bulk.selectAll,
+        /** Deselect all records */
+        deselectAll: bulk.deselectAll,
+        /** Bind the select all checkbox */
+        bindAll: bulk.bindAll,
+        /** Bind the given record to a checkbox */
+        bind: (record: U) => bulk.bind(getRecordKey(record)),
+        /** Determine if all records are selected */
+        allSelected: bulk.allSelected,
+        /** The current selection of records */
+        selection: bulk.selection,
+        /** Select the given records */
+        select: (record: U) => bulk.select(getRecordKey(record)),
+        /** Deselect the given records */
+        deselect: (record: U) => bulk.deselect(getRecordKey(record)),
+        /** Toggle the selection of the given records */
+        toggle: (record: U) => bulk.toggle(getRecordKey(record)),
+        /** Determine if the given record is selected */
+        selected: (record: U) => bulk.selected(getRecordKey(record)),
+        /** Determine if any records are selected */
+        hasSelected: bulk.hasSelected,
+        /** Include the sorts, filters, and search query */
         bulk,
         ...refine
     })
