@@ -30,7 +30,7 @@ const nav = useNav();
                         <Branding class="h-6"/>
                     </Link>
                 </SidebarHeader>
-                <SidebarContent>
+                <!-- <SidebarContent>
                     <SidebarGroup v-for="group in nav" :key="group.label">
                         <SidebarGroupLabel>
                             {{ group.label }}
@@ -47,7 +47,7 @@ const nav = useNav();
                             </SidebarMenu>
                         </SidebarGroupContent>
                     </SidebarGroup>
-                </SidebarContent>
+                </SidebarContent> -->
             </Sidebar>
             <div class="w-full">
                 <header>

@@ -19,8 +19,9 @@ use Honed\Table\Columns\DateColumn;
 use Honed\Table\Columns\TextColumn;
 use Honed\Table\Columns\NumberColumn;
 use Honed\Refine\Filters\CallbackFilter;
+use Honed\Table\Contracts\ShouldRemember;
 
-final class OrganizationTable extends Table
+final class OrganizationTable extends Table implements ShouldRemember
 {
     public $toggle = true;
 

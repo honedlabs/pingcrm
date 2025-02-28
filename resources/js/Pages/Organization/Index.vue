@@ -22,6 +22,7 @@ import {
 } from '@/components/dropdown-menu'
 import { 
     Icon,
+    ChevronUp,
     ChevronDown, 
     ChevronLeft, 
     ChevronRight, 
@@ -122,9 +123,8 @@ const table = useTable(props, 'organizations')
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                     <DropdownMenuCheckboxItem v-for="column in table.columns"
-                        :key="column.name"
                         :model-value="column.active"
-                        :disabled="! column.toggle"
+                        :disabled="! column.toggleable"
                         @click="column.toggleColumn()"
                         >
                         {{ column.label }}
@@ -136,26 +136,33 @@ const table = useTable(props, 'organizations')
             <TableCaption class="sr-only">
                 A list of your organizations.
             </TableCaption>
+            <colgroup>
+                <col class="w-10" span="1"/>
+                <col v-for="col in table.headings" 
+                    :key="col.name"
+                    :class="col.class"
+                />
+                <col class="w-10" span="1"/>
+            </colgroup>
             <TableHeader>
                 <TableRow>
-                    <TableHead>
+                    <TableHead class="w-10">
                         <div class="flex items-center">
-                            <Checkbox v-bind="table.bindAll()"  />
+                            <Checkbox v-bind="table.bindPage()"  />
                         </div>
                     </TableHead>
-                        <TableHead v-for="col in table.headings" 
-                            :key="col.name"
-                            :class="col.class"
-                        >
-                            <span class="flex items-center gap-x-2">
-                                {{ col.label }}
-                                <button class="inline-flex justify-center items-center" v-if="col.sort" @click="col.applySort()">
-                                    <ChevronUp v-if="col.sort.direction === 'asc'" class="size-4" />
-                                    <ChevronDown v-else-if="col.sort.direction === 'desc'" class="size-4" />
-                                    <ChevronsUpDown v-else class="size-4" />
-                                </button>
-                            </span>
-                        </TableHead>
+                    <TableHead v-for="col in table.headings" 
+                        :key="col.name"
+                    >
+                        <span class="flex items-center gap-x-2">
+                            {{ col.label }}
+                            <button class="inline-flex justify-center items-center" v-if="col.sort" @click="col.applySort()">
+                                <ChevronUp v-if="col.sort.direction === 'asc'" class="size-4" />
+                                <ChevronDown v-else-if="col.sort.direction === 'desc'" class="size-4" />
+                                <ChevronsUpDown v-else class="size-4" />
+                            </button>
+                        </span>
+                    </TableHead>
                     <TableHead>
                         Actions
                     </TableHead>
@@ -173,9 +180,9 @@ const table = useTable(props, 'organizations')
                     </TableCell>
                     <TableCell v-for="column in table.headings" 
                         :key="column.name" 
-                        class="font-medium"
+                        :class="column.class"
                     >
-                        {{ row[column.name] }} {{ row.id }}
+                        {{ row[column.name] }}
                     </TableCell>
                     <TableCell @click.stop>
                         <DropdownMenu :modal="false">
@@ -212,7 +219,7 @@ const table = useTable(props, 'organizations')
                     </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                    <DropdownMenuItem v-for="item in table.pages"
+                    <DropdownMenuItem v-for="item in table.rowsPerPage"
                         @click="item.apply()"
                     >
                         {{ item.value }}

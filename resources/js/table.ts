@@ -1,10 +1,10 @@
 import { computed, reactive } from "vue"
 import type { InlineAction, BulkAction, PageAction, BaseAction } from "./action"
-import type { FormDataConvertible, Method, VisitOptions } from '@inertiajs/core'
+import type { VisitOptions } from '@inertiajs/core'
 import { router } from '@inertiajs/vue3'
 import { useBulk } from "./bulk"
 import { useRefine } from "./refine"
-import type { Direction, Refine, Keys as RefineKeys } from "./refine"
+import type { Direction, Refine, Config as RefineConfig } from "./refine"
 
 export type Identifier = string | number
 
@@ -13,18 +13,19 @@ export interface Column<T extends Record<string, any>> {
     label: string
     type: 'text' | 'number' | 'date' | 'boolean' | string
     hidden: boolean
-    toggle: boolean
+    active: boolean
+    toggleable: boolean
     icon?: string
     class?: string
     meta?: Record<string, any>
-    active: boolean
     sort?: {
         direction: Direction
         next: string | null
     }
 }
 
-export interface Keys extends RefineKeys {
+export interface Config extends RefineConfig {
+    endpoint: string
     record: string
     records: string
     columns: string
@@ -39,7 +40,11 @@ export interface PaginatorLink {
     active: boolean
 }
 
-export interface Paginator {
+export interface CollectionPaginator {
+    empty: boolean
+}
+
+export interface Paginator extends CollectionPaginator {
     prev: string | null
     next: string | null
     perPage: number
@@ -68,25 +73,25 @@ export interface Page {
 export interface Table<
     T extends Record<string, any> = any,
     U extends PaginatorKind = 'length-aware',
-> {
-    table: string
+> extends Refine {
+    id: string
     records: T[] & { actions: InlineAction[] }
-    meta: U extends 'length-aware' 
+    paginator: U extends 'length-aware' 
         ? LengthAwarePaginator
         : (U extends 'simple' 
             ? SimplePaginator
             : (U extends 'cursor'
                 ? CursorPaginator
-                : Record<string, any>)), 
+                : CollectionPaginator)), 
     columns: Column<T>[]
-    pages: Page[]
-    toggle: boolean
+    recordsPerPage: Page[]
+    toggleable: boolean
     actions: {
+        hasInline: boolean
         bulk: BulkAction[]
         page: PageAction[]
     }
-    endpoint: string
-    keys: Keys
+    config: Config
 }
 
 export interface TableOptions<T extends Record<string, any>> {
@@ -109,7 +114,7 @@ export function useTable<
     const table = computed(() => props[key] as Table<U, V>)
     const bulk = useBulk()
     const refine = useRefine<T, K>(props, key)
-    const keys = computed(() => table.value.keys)
+    const config = computed(() => table.value.config)
     
     /**
      * The heading columns for the table.
@@ -185,7 +190,7 @@ export function useTable<
     /**
      * Available number of records to display per page.
      */
-    const pages = computed(() => table.value.pages.map(page => ({
+    const rowsPerPage = computed(() => table.value.recordsPerPage.map(page => ({
         ...page,
         /** Changes the number of records to display per page */
         apply: (options: VisitOptions = {}) => applyPage(page, options)
@@ -194,27 +199,52 @@ export function useTable<
     /**
      * The current number of records to display per page.
      */
-    const currentPage = computed(() => table.value.pages.find(({ active }) => active))
+    const currentPage = computed(() => table.value.recordsPerPage.find(({ active }) => active))
 
     /**
      * The paginator metadata.
      */
-    const paginator = computed(() => table.value.meta)
+    const paginator = computed(() => ({
+        ...table.value.paginator,
+        next: (options: VisitOptions = {}) => {
+            // if (! paginator.value.next) {
+            //     return
+            // }
+
+            // router.get(paginator.value.next, {
+            //     // ...defaultOptions,
+            //     ...options,
+            //     preserveState: true,
+            // })
+        },
+        previous: (options: VisitOptions = {}) => {
+        },
+        navigate: (page: number | string, options: VisitOptions = {}) => {
+        },
+        
+    }))
+
+    /**
+     * Whether all records on the current page are selected.
+     */
+    const isPageSelected = computed(() => table.value.records.length > 0 
+        && table.value.records.every((record: U) => bulk.selected(getRecordKey(record))))
+
 
     /**
      * Get the identifier of the record.
      */
     function getRecordKey(record: U) {
-        return record[keys.value.record] as Identifier
+        return record[config.value.record] as Identifier
     }
 
     /**
      * Make an Inertia request to the given route.
      */
     function visitAction(action: BaseAction, options: VisitOptions = {}) {
-        router.visit(action.href!, {
+        router.visit(action.route!.href, {
             ...options,
-            method: action.method!,
+            method: action.route!.method,
         })
     }
 
@@ -222,10 +252,10 @@ export function useTable<
      * Execute an action at the table endpoint.
      */
     function executeAction(action: BaseAction, data: Record<string, any>, options: VisitOptions = {}) {
-        router.post(table.value.endpoint, {
+        router.post(config.value.endpoint, {
             ...data,
             name: action.name,
-            table: table.value.table,
+            table: table.value.id,
         }, options)
     }
     
@@ -233,7 +263,7 @@ export function useTable<
      * Execute an inline action.
      */
     function executeInlineAction(action: InlineAction, record: U, options: VisitOptions = {}) {
-        if (action.href) {
+        if (action.route) {
             visitAction(action, options)
 
             return
@@ -255,7 +285,7 @@ export function useTable<
      * Execute a bulk action.
      */
     function executeBulkAction(action: BulkAction, options: VisitOptions = {}) {
-        if (action.href) {
+        if (action.route) {
             visitAction(action, options)
 
             return
@@ -286,7 +316,7 @@ export function useTable<
      * Execute a page action.
      */
     function executePageAction(action: PageAction, options: VisitOptions = {}) {
-        if (action.href) {
+        if (action.route) {
             visitAction(action, options)
             return
         }
@@ -306,8 +336,8 @@ export function useTable<
         router.reload({
             ...options,
             data: {
-                [keys.value.records]: page.value,
-                ['page']: undefined
+                [config.value.records]: page.value,
+                [config.value.pages]: undefined
             }
         })
     }
@@ -323,7 +353,7 @@ export function useTable<
         router.reload({
             ...options,
             data: {
-                [keys.value.sorts]: column.sort.next,
+                [config.value.sorts]: column.sort.next,
             }
         })
     }
@@ -344,30 +374,53 @@ export function useTable<
         router.reload({
             ...options,
             data: {
-                [keys.value.columns]: params.join(','),
+                [config.value.columns]: params.join(','),
             },
         })
     }
 
+    /**
+     * Selects records on the current page.
+     */
+    function selectPage() {
+        bulk.select(...table.value.records.map((record: U) => getRecordKey(record)))
+    }
+
+    /**
+     * Deselects records on the current page.
+     */
+    function deselectPage() {
+        bulk.deselect(...table.value.records.map((record: U) => getRecordKey(record)))
+    }
+
+    /**
+     * Bind the select all checkbox to the current page.
+     */
+    function bindPage() {
+        return {
+            'onUpdate:modelValue': (checked: boolean | 'indeterminate') => {
+                console.log('Checked:', checked)
+                if (checked) {
+                    selectPage()
+                } else {
+                    deselectPage()
+                }
+            },
+            modelValue: isPageSelected.value,
+        }
+    }
     return reactive({
         headings,
         columns,
         records,
         bulkActions,
         pageActions,
-        pages,
+        rowsPerPage,
         currentPage,
         paginator,
-        /** Select all records */
-        selectAll: bulk.selectAll,
-        /** Deselect all records */
-        deselectAll: bulk.deselectAll,
-        /** Bind the select all checkbox */
-        bindAll: bulk.bindAll,
-        /** Bind the given record to a checkbox */
-        bind: (record: U) => bulk.bind(getRecordKey(record)),
-        /** Determine if all records are selected */
-        allSelected: bulk.allSelected,
+        isPageSelected,
+        selectPage,
+		deselectPage,
         /** The current selection of records */
         selection: bulk.selection,
         /** Select the given records */
@@ -380,8 +433,11 @@ export function useTable<
         selected: (record: U) => bulk.selected(getRecordKey(record)),
         /** Determine if any records are selected */
         hasSelected: bulk.hasSelected,
+        /** Bind the select all checkbox to the current page */
+        bindPage,
+        /** Bind the given record to a checkbox */
+        bind: (record: U) => bulk.bind(getRecordKey(record)),
         /** Include the sorts, filters, and search query */
-        bulk,
         ...refine
     })
 }

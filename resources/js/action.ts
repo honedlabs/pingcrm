@@ -22,8 +22,7 @@ export interface BaseAction {
     extra?: Record<string, unknown>
     icon?: string
     confirm?: Confirm
-    href?: string
-    method?: Method
+    route?: Route
 }
 
 export interface InlineAction extends BaseAction {

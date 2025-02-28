@@ -54,17 +54,18 @@ type Filter = SetFilterRefiner | DateFilterRefiner | BooleanFilterRefiner | Filt
 
 export interface SearchRefiner extends Refiner { }
 
-export interface Keys {
-    sorts: string
+export interface Config {
+    delimiter: string
+    search: string | null
     searches: string
+    sorts: string
     matches?: string
 }
 
 export interface Refine {
     sorts: SortRefiner[]
     filters: Filter[]
-    search: string | null
-    keys: Keys
+    config: Config
     searches?: SearchRefiner[]
 }
 
@@ -72,7 +73,7 @@ export interface SearchOptions {
     /**
      * The debounce time in milliseconds.
      * 
-     * @default 750
+     * @default 1000
      */
     debounce?: number
 }
@@ -116,7 +117,7 @@ export function useRefine<
      */
     function getArrayParameter(value: any) {
         if (Array.isArray(value)) {
-            return value.join(',')
+            return value.join(refinements.value.config.delimiter)
         }
 
         return value
@@ -130,13 +131,15 @@ export function useRefine<
             return value
         }
 
+        console.log('String', value)
+
         return value.trim().replace(/\s+/g, '+')
     }
 
     /**
      * Returns undefined if the value is an empty string, null, or undefined.
      */
-    function getOmittedParameter(value: any) {
+    function omitEmptyParameters(value: any) {
         if (['', null, undefined, []].includes(value)) {
             return undefined
         }
@@ -147,7 +150,7 @@ export function useRefine<
     /**
      * Toggle the presence of a value in an array.
      */
-    function getToggledParameter(value: any, values: any) {
+    function toggleParameter(value: any, values: any) {
         values = Array.isArray(values) ? values : [values];
 
         if (values.includes(value)) {
@@ -244,12 +247,13 @@ export function useRefine<
         }
         
         if ('multiple' in filter && filter.multiple) {
-            value = getToggledParameter(value, filter.value)
+            value = toggleParameter(value, filter.value)
         }
 
-        value = [getOmittedParameter, getArrayParameter, getStringValue]
+        value = [getArrayParameter, getStringValue, omitEmptyParameters]
             .reduce((result, transform) => transform(result), value)
 
+        console.log(value)
         router.reload({
             ...defaultOptions,
             ...options,
@@ -274,7 +278,7 @@ export function useRefine<
             ...defaultOptions,
             ...options,
             data: {
-                [refinements.value.keys.sorts]: sort.next
+                [refinements.value.config.sorts]: omitEmptyParameters(sort.next)
             }
         })
     }
@@ -283,14 +287,14 @@ export function useRefine<
      * Applies a text search.
      */
     function applySearch(value: string | null | undefined, options: VisitOptions = {}) {
-        value = [getOmittedParameter, getStringValue]
+        value = [getStringValue, omitEmptyParameters]
             .reduce((result, transform) => transform(result), value)
 
         router.reload({
             ...defaultOptions,
             ...options,
             data: {
-                [refinements.value.keys.searches]: value
+                [refinements.value.config.searches]: value
             }
         })
     }
@@ -310,7 +314,7 @@ export function useRefine<
             ...defaultOptions,
             ...options,
             data: {
-                [refinements.value.keys.sorts]: null
+                [refinements.value.config.sorts]: null
             }
         })
     }
@@ -324,13 +328,13 @@ export function useRefine<
             ...defaultOptions,
             ...options,
             data: {
-                [refinements.value.keys.searches]: undefined,
-                [refinements.value.keys.sorts]: undefined,
+                [refinements.value.config.searches]: undefined,
+                [refinements.value.config.sorts]: undefined,
                 ...Object.fromEntries(
                     refinements.value.filters.map(filter => [filter.name, undefined])
                 ),
-                ...(refinements.value.keys.matches 
-                    ? { [refinements.value.keys.matches]: undefined } 
+                ...(refinements.value.config.matches 
+                    ? { [refinements.value.config.matches]: undefined } 
                     : {}
                 )
             }
@@ -385,8 +389,8 @@ export function useRefine<
         return {
             'onUpdate:modelValue': useDebounceFn((value: any) => {
                 applySearch(value, options)
-            }, searchOptions.debounce ?? 750),
-            modelValue: refinements.value.search ?? ''
+            }, searchOptions.debounce ?? 1000),
+            modelValue: refinements.value.config.search ?? ''
         }
     }
 
