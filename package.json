@@ -31,7 +31,11 @@
     },
     "dependencies": {
         "@heroicons/vue": "^2.2.0",
+        "@honed/action": "^0.1.6",
         "@honed/modal": "^0.1.1",
+        "@honed/nav": "^0.1.0",
+        "@honed/refine": "^0.1.2",
+        "@honed/table": "^0.1.0",
         "@vueuse/core": "^12.7.0",
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",

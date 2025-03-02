@@ -1,11 +1,11 @@
 import { computed, reactive } from "vue"
-import { executeAction } from "./action"
-import type { InlineAction, BulkAction, PageAction } from "./action"
+import { executeAction } from "@honed/action"
+import type { InlineAction, BulkAction, PageAction } from "@honed/action"
 import type { VisitOptions } from '@inertiajs/core'
 import { router } from '@inertiajs/vue3'
-import { useBulk } from "./bulk"
-import { useRefine } from "./refine"
-import type { Direction, Refine, Config as RefineConfig } from "./refine"
+import { useBulk } from "@honed/action"
+import { useRefine } from "@honed/refine"
+import type { Direction, Refine, Config as RefineConfig } from "@honed/refine"
 
 export type Identifier = string | number
 

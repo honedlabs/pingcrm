@@ -15,7 +15,7 @@ import {
     SidebarMenuButton, 
     SidebarHeader
 } from '@/components/sidebar';
-import { useNav } from '@/nav';
+import { useNav } from '@honed/nav';
 
 const nav = useNav('app');
 
@@ -30,6 +30,7 @@ const nav = useNav('app');
                         <Branding class="h-6"/>
                     </Link>
                 </SidebarHeader>
+
                 <SidebarContent>
                     <SidebarGroup v-for="group in nav" :key="group.label">
                         <SidebarGroupLabel>
@@ -54,6 +55,7 @@ const nav = useNav('app');
 
                 </header>
                 <main class="px-8 py-4">
+                    {{ nav }}
                     <slot />
                 </main>
             </div>

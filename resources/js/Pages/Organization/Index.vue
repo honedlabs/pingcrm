@@ -34,7 +34,7 @@ import { Input } from '@/components/input'
 import { Button } from '@/components/button'
 import { Checkbox } from '@/components/checkbox'
 import { Primitive, VisuallyHidden } from 'reka-ui'
-import { useTable } from '@/table'
+import { useTable } from '@honed/table'
 import { ref } from 'vue'
 import { Label } from '@/components/label'
 import { Block } from '@/components/block'
@@ -43,7 +43,6 @@ defineOptions({ layout: AppLayout })
 
 interface Props {
     organizations: any
-    
 }
 
 const props = defineProps<Props>()
@@ -97,11 +96,11 @@ const table = useTable(props, 'organizations')
                             Countries
                         </DropdownMenuSubTrigger>
                         <DropdownMenuSubContent align="start">
-                            <DropdownMenuCheckboxItem v-for="option in table.getFilter('country')?.options ?? []"
+                            <!-- <DropdownMenuCheckboxItem v-for="option in table.getFilter('country')?.options ?? []"
                                 :key="option.value"
                             >
                                 {{ option.label }}
-                            </DropdownMenuCheckboxItem>
+                            </DropdownMenuCheckboxItem> -->
                         </DropdownMenuSubContent>
                     </DropdownMenuSub>
                     <DropdownMenuSub>
