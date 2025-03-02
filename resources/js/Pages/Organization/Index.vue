@@ -99,7 +99,6 @@ const table = useTable(props, 'organizations')
                         <DropdownMenuSubContent align="start">
                             <DropdownMenuCheckboxItem v-for="option in table.getFilter('country')?.options ?? []"
                                 :key="option.value"
-                                v-bind="table.bindOption(option, 'country')"
                             >
                                 {{ option.label }}
                             </DropdownMenuCheckboxItem>

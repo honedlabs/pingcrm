@@ -98,8 +98,8 @@ export function useRefine<
      */
     const filters = computed(() => refinements.value.filters.map(filter => ({
         ...filter,
-        apply: (value: T, options: VisitOptions = {}) => applyFilter(filter.name, value, options),
-        clear: (options: VisitOptions = {}) => clearFilter(filter.name, options),
+        apply: (value: T, options: VisitOptions = {}) => applyFilter(filter, value, options),
+        clear: (options: VisitOptions = {}) => clearFilter(filter, options),
         bind: () => bindFilter(filter.name)
     })))
 
@@ -108,8 +108,9 @@ export function useRefine<
      */
     const sorts = computed(() => refinements.value.sorts.map(sort => ({
         ...sort,
-        apply: (options: VisitOptions = {}) => applySort(sort.name, sort.direction, options),
+        apply: (options: VisitOptions = {}) => applySort(sort, sort.direction, options),
         clear: (options: VisitOptions = {}) => clearSort(options),
+        bind: () => bindSort(sort)
     })))
 
     /**
@@ -236,16 +237,16 @@ export function useRefine<
     /**
      * Applies the given filter.
      */
-    function applyFilter(name: string, value: any, options: VisitOptions = {}) {
-        const filter = getFilter(name)
+    function applyFilter(filter: Filter | string, value: any, options: VisitOptions = {}) {
+        const refiner = typeof filter === 'string' ? getFilter(filter) : filter
         
-        if (!filter) {
-            console.warn(`Filter [${name}] does not exist.`)
+        if (!refiner) {
+            console.warn(`Filter [${filter}] does not exist.`)
             return
         }
         
-        if ('multiple' in filter && filter.multiple) {
-            value = toggleValue(value, filter.value)
+        if ('multiple' in refiner && refiner.multiple) {
+            value = toggleValue(value, refiner.value)
         }
 
         value = [delimitArray, stringValue, omitValue]
@@ -256,7 +257,7 @@ export function useRefine<
             ...defaultOptions,
             ...options,
             data: {
-                [filter.name]: value
+                [refiner.name]: value
             }
         })
     }
@@ -264,11 +265,11 @@ export function useRefine<
     /**
      * Applies the given sort.
      */
-    function applySort(name: string, direction: Direction = null, options: VisitOptions = {}) {
-        const sort = getSort(name, direction)
+    function applySort(sort: Sort | string, direction: Direction = null, options: VisitOptions = {}) {
+        const refiner = typeof sort === 'string' ? getSort(sort, direction) : sort
 
-        if (!sort) {
-            console.warn(`Sort [${name}] does not exist.`)
+        if (!refiner) {
+            console.warn(`Sort [${sort}] does not exist.`)
             return
         }
 
@@ -276,7 +277,7 @@ export function useRefine<
             ...defaultOptions,
             ...options,
             data: {
-                [refinements.value.config.sorts]: omitValue(sort.next)
+                [refinements.value.config.sorts]: omitValue(refiner.next)
             }
         })
     }
@@ -300,8 +301,8 @@ export function useRefine<
     /**
      * Clear the given filter.
      */
-    function clearFilter(name: string, options: VisitOptions = {}) {
-        applyFilter(name, undefined, options)
+    function clearFilter(filter: Filter | string, options: VisitOptions = {}) {
+        applyFilter(filter, undefined, options)
     }
 
     /**
@@ -318,10 +319,16 @@ export function useRefine<
     }
 
     /**
+     * Clear the search.
+     */
+    function clearSearch(options: VisitOptions = {}) {
+        applySearch(undefined, options)
+    }
+
+    /**
      * Resets all filters, sorts, matches and search.
      */
     function reset(options: VisitOptions = {}) {
-
         router.reload({
             ...defaultOptions,
             ...options,
@@ -342,9 +349,17 @@ export function useRefine<
     /**
      * Binds a filter to a form input.
      */
-    function bindFilter<T extends any>(name: string, options: BindingOptions = {}) {
-        const value = getFilter(name)?.value as T
-        const {
+    function bindFilter<T extends any>(filter: Filter | string, options: BindingOptions = {}) {
+        const refiner = typeof filter === 'string' ? getFilter(filter) : filter
+
+        if (!refiner) {
+            console.warn(`Filter [${filter}] does not exist.`)
+            return
+        }
+
+        const value = refiner.value as T
+
+        const { 
             debounce = 250,
             transform = (value: any) => value,
             ...visitOptions
@@ -352,7 +367,7 @@ export function useRefine<
 
         return {
             'onUpdate:modelValue': useDebounceFn((value: any) => {
-                applyFilter(name, transform(value), visitOptions)
+                applyFilter(refiner, transform(value), visitOptions)
             }, debounce),
             modelValue: value,
             value: value,
@@ -360,40 +375,29 @@ export function useRefine<
     }
 
     /**
-     * Binds a set filter option to a checkbox or other form input.
+     * Binds a sort to a button.
      */
-    function bindOption<T extends any>(option: Option, filter: string) {
+    function bindSort(sort: Sort | string, options: BindingOptions = {}) {
+        const refiner = typeof sort === 'string' ? getSort(sort) : sort
+
+        if (!refiner) {
+            console.warn(`Sort [${sort}] does not exist.`)
+            return
+        }
+
+        const { debounce = 0, transform, ...visitOptions } = options;
         return {
-            'onUpdate:modelValue': (checked: boolean | 'indeterminate') => {
-                applyFilter(filter, option.value)
-            },
-            modelValue: option.active,
-            value: option.value as T,
+            'onClick': useDebounceFn(() => {
+                applySort(refiner, currentSort()?.direction, visitOptions)
+            }, debounce)
         }
     }
-
-	// /**
-	//  * Binds a match option to a checkbox.
-	//  */
-	// function bindMatch(name: string) {
-	// 	return {
-	// 		'onUpdate:modelValue': (checked: boolean | 'indeterminate') => {
-	// 			//
-	// 		},
-	// 		modelValue: '',
-	// 		value: key,
-	// 	}
-	// }
 
     /**
      * Binds a search input to a form input.
      */
-    function bindSearch(options: VisitOptions & BindingOptions = {}) {
-        const {
-            debounce = 1000,
-            transform,
-            ...visitOptions
-        } = options;
+    function bindSearch(options: BindingOptions = {}) {
+        const { debounce = 700, transform, ...visitOptions } = options;
 
         return {
             'onUpdate:modelValue': useDebounceFn((value: any) => {
@@ -419,17 +423,15 @@ export function useRefine<
         isSearching,
         applyFilter,
         applySort,
-        // applySearch,
+        applySearch,
         clearFilter,
         clearSort,
-        // clearSearch,
+        clearSearch,
         reset,
         bindFilter,
-        bindOption,
+        bindSort,
         // bindMatch,
         bindSearch,
-        // bindSort,
-
         /** Provide the helpers */
         stringValue,
         omitValue,
