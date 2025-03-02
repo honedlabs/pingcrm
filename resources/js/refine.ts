@@ -13,7 +13,7 @@ export interface Refiner {
 
 export type Direction = 'asc' | 'desc' | null
 
-export interface SortRefiner extends Refiner {
+export interface Sort extends Refiner {
     type: 'sort' | string
     direction: Direction
     next: string | null
@@ -21,7 +21,7 @@ export interface SortRefiner extends Refiner {
 
 export type FilterValue = string | number | boolean | null
 
-export type KnownFilter = 'filter' | 'set' | 'date' | 'boolean' | 'trashed'
+export type KnownFilter = 'filter' | 'set' | 'date' | 'boolean' | string
 
 export interface FilterRefiner extends Refiner {
     type: KnownFilter | string
@@ -52,7 +52,7 @@ export interface BooleanFilterRefiner extends FilterRefiner {
 
 type Filter = SetFilterRefiner | DateFilterRefiner | BooleanFilterRefiner | FilterRefiner
 
-export interface SearchRefiner extends Refiner { }
+export interface Search extends Refiner { }
 
 export interface Config {
     delimiter: string
@@ -63,17 +63,22 @@ export interface Config {
 }
 
 export interface Refine {
-    sorts: SortRefiner[]
+    sorts: Sort[]
     filters: Filter[]
     config: Config
-    searches?: SearchRefiner[]
+    searches?: Search[]
 }
 
-export interface SearchOptions {
+export interface BindingOptions extends VisitOptions {
+    /**
+     * Transform the value before it is applied.
+     */
+    transform?: (value: any) => any
+
     /**
      * The debounce time in milliseconds.
      * 
-     * @default 1000
+     * @default 250
      */
     debounce?: number
 }
@@ -163,7 +168,7 @@ export function useRefine<
     /**
      * Gets a sort by name.
      */
-    function getSort(name: string, direction: Direction = null): SortRefiner|undefined {
+    function getSort(name: string, direction: Direction = null): Sort | undefined {
         return refinements.value.sorts.find(sort => sort.name === name && sort.direction === direction)
     }
 
@@ -175,16 +180,16 @@ export function useRefine<
     }
 
     /**
-     * Gets a match by name.
+     * Gets a search by name.
      */
-    function getMatch(name: string): SearchRefiner|undefined {
+    function getSearch(name: string): Search | undefined {
         return refinements.value.searches?.find(search => search.name === name)
     }
 
     /**
      * The current sort.
      */
-    function currentSort(): SortRefiner | undefined {
+    function currentSort(): Sort | undefined {
         return refinements.value.sorts.find(({ active }) => active)
     }
 
@@ -198,7 +203,7 @@ export function useRefine<
     /**
      * The current searches.
      */
-    function currentSearches(): SearchRefiner[] {
+    function currentSearches(): Search[] {
         return refinements.value.searches?.filter(({ active }) => active) ?? []
     }
 
@@ -344,13 +349,18 @@ export function useRefine<
     /**
      * Binds a filter to a form input.
      */
-    function bindFilter<T extends any>(name: string) {
+    function bindFilter<T extends any>(name: string, options: BindingOptions = {}) {
         const value = getFilter(name)?.value as T
+        const {
+            debounce = 250,
+            transform = (value: any) => value,
+            ...visitOptions
+        } = options;
 
         return {
-            'onUpdate:modelValue': (value: any) => {
-                applyFilter(name, value);
-            },
+            'onUpdate:modelValue': useDebounceFn((value: any) => {
+                applyFilter(name, transform(value), visitOptions)
+            }, debounce),
             modelValue: value,
             value: value,
         }
@@ -385,22 +395,29 @@ export function useRefine<
     /**
      * Binds a search input to a form input.
      */
-    function bindSearch(options: VisitOptions = {}, searchOptions: SearchOptions = {}) {
+    function bindSearch(options: VisitOptions & BindingOptions = {}) {
+        const {
+            debounce = 1000,
+            transform,
+            ...visitOptions
+        } = options;
+
         return {
             'onUpdate:modelValue': useDebounceFn((value: any) => {
-                applySearch(value, options)
-            }, searchOptions.debounce ?? 1000),
+                applySearch(value, visitOptions)
+            }, debounce),
             modelValue: refinements.value.config.search ?? ''
         }
     }
 
     return {
-        refinements,
+        // refinements,
         filters,
         sorts,
+        // searches,
         getSort,
         getFilter,
-        getMatch,
+        getSearch,
         currentSort,
         currentFilters,
         currentSearches,
@@ -409,11 +426,15 @@ export function useRefine<
         isSearching,
         applyFilter,
         applySort,
+        // applySearch,
         clearFilter,
+        clearSort,
+        // clearSearch,
         reset,
         bindFilter,
         bindOption,
         // bindMatch,
         bindSearch,
+        // bindSort,
     }
 }

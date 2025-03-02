@@ -6,6 +6,7 @@ namespace Database\Seeders;
 
 use App\Models\User;
 use App\Models\Account;
+use App\Models\Country;
 use App\Models\Organization;
 use Illuminate\Database\Seeder;
 
@@ -16,6 +17,36 @@ final class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        Country::create([
+            'name' => 'United States',
+            'code' => 'US',
+        ]);
+
+        Country::create([
+            'name' => 'Canada',
+            'code' => 'CA',
+        ]);
+
+        Country::create([
+            'name' => 'Mexico',
+            'code' => 'MX',
+        ]);
+
+        Country::create([
+            'name' => 'United Kingdom',
+            'code' => 'GB',
+        ]);
+
+        Country::create([
+            'name' => 'Australia',
+            'code' => 'AU',
+        ]);
+
+        Country::create([
+            'name' => 'New Zealand',
+            'code' => 'NZ',
+        ]);
+
         $account = Account::factory()
             ->has(User::factory(1)
                 ->state([

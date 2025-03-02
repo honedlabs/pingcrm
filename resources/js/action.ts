@@ -1,8 +1,9 @@
-import type { Method } from '@inertiajs/core'
+import type { Method, VisitOptions } from '@inertiajs/core'
+import { router } from '@inertiajs/vue3'
 
 export type Identifier = string | number
 
-export interface Route {
+interface Route {
     href: string
     method: Method
 }
@@ -14,7 +15,7 @@ export interface Confirm {
     description: string
 }
 
-export interface BaseAction {
+export interface Action {
     name: string
     label: string
     type: ActionType
@@ -25,16 +26,66 @@ export interface BaseAction {
     route?: Route
 }
 
-export interface InlineAction extends BaseAction {
+export interface InlineAction extends Action {
     type: 'inline'
     default: boolean
 }
 
-export interface BulkAction extends BaseAction {
+export interface BulkAction extends Action {
     type: 'bulk'
     keepSelected: boolean
 }
 
-export interface PageAction extends BaseAction {
+export interface PageAction extends Action {
     type: 'page'
+}
+
+export interface InlineActionData extends Record<string, unknown> {
+    id: Identifier
+}
+
+export interface BulkActionData extends Record<string, unknown> {
+    all: boolean
+    only: Identifier[]
+    except: Identifier[]
+}
+
+export function executeAction<
+    T extends ActionType = any
+> (
+    action: T extends 'inline' 
+        ? InlineAction 
+        : T extends 'bulk' 
+            ? BulkAction 
+            : T extends 'page' 
+                ? PageAction 
+                : Action, 
+    endpoint?: string, 
+    data: T extends 'inline' 
+        ? InlineActionData
+        : T extends 'bulk' 
+            ? BulkActionData
+            : object = {} as any,
+    options: VisitOptions = {}
+) {
+    if (action.route) {
+        router.visit(action.route.href, {
+            ...options,
+            method: action.route.method,
+        })
+
+        return true
+    }
+
+    if (action.action && endpoint) {
+        router.post(endpoint, {
+            ...data,
+            name: action.name,
+            type: action.type,
+        }, options)
+
+        return true
+    }
+
+    return false
 }

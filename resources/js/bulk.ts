@@ -104,6 +104,9 @@ export function useBulk<T = any>() {
 		}
 	}
 
+	/**
+	 * Bind the all checkbox.
+	 */
     function bindAll() {
         return {
             'onUpdate:modelValue': (checked: boolean | 'indeterminate') => {

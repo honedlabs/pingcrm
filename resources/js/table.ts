@@ -1,5 +1,6 @@
 import { computed, reactive } from "vue"
-import type { InlineAction, BulkAction, PageAction, BaseAction } from "./action"
+import { executeAction } from "./action"
+import type { InlineAction, BulkAction, PageAction } from "./action"
 import type { VisitOptions } from '@inertiajs/core'
 import { router } from '@inertiajs/vue3'
 import { useBulk } from "./bulk"
@@ -265,7 +266,6 @@ export function useTable<
     function executeInlineAction(action: InlineAction, record: U, options: VisitOptions = {}) {
         if (action.route) {
             visitAction(action, options)
-
             return
         }
         
@@ -287,7 +287,6 @@ export function useTable<
     function executeBulkAction(action: BulkAction, options: VisitOptions = {}) {
         if (action.route) {
             visitAction(action, options)
-
             return
         }
 

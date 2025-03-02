@@ -1,7 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Database\Factories;
 
+use App\Models\Country;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -16,6 +19,8 @@ final class OrganizationFactory extends Factory
      */
     public function definition(): array
     {
+        $country = Country::query()->inRandomOrder()->first(['id']);
+        
         return [
             'name' => fake()->unique()->company(),
             'email' => fake()->unique()->companyEmail(),
@@ -23,7 +28,7 @@ final class OrganizationFactory extends Factory
             'address' => fake()->streetAddress(),
             'city' => fake()->city(),
             'region' => fake()->state(),
-            'country' => 'US',
+            'country_id' => $country->id,
             'postal_code' => fake()->postcode(),
         ];
     }

@@ -6,6 +6,7 @@ namespace App\Tables;
 
 use App\Enums\AppIcon;
 use Honed\Table\Table;
+use App\Models\Country;
 use App\Models\Organization;
 use Honed\Action\BulkAction;
 use Honed\Action\PageAction;
@@ -28,10 +29,18 @@ final class OrganizationTable extends Table implements ShouldRemember
     // public $remember = true;
     public $pagination = [5, 10, 25, 50, 100];
 
-    public function resource()
+    public function for()
     {
         return Organization::query()
+            // ->where()
+            // ->with(['country:id,name')
+            // ->with(['country' => fn ($query) => $query->select('id', 'name')])
             ->withCount('contacts');
+    }
+
+    public function after($query)
+    {
+        return $query->latest();
     }
 
     /**
@@ -42,7 +51,7 @@ final class OrganizationTable extends Table implements ShouldRemember
     public function columns(): array
     {
         return [
-            KeyColumn::make('id'),
+            Column::make('id')->key(),
             TextColumn::make('name')
                 ->sortable()
                 ->searchable()
@@ -52,12 +61,18 @@ final class OrganizationTable extends Table implements ShouldRemember
                 ->searchable(),
             TextColumn::make('phone'),
             TextColumn::make('address'),
-            NumberColumn::make('contacts_count', 'Contacts')->sortable(),
-            TextColumn::make('city')->sometimes(),
-            TextColumn::make('region')->sometimes(),
-            TextColumn::make('country')->sometimes(),
-            TextColumn::make('postal_code')->sometimes(),
-            DateColumn::make('created_at', 'Created')->sortable()->sometimes(),
+            NumberColumn::make('contacts_count', 'Contacts'),
+            TextColumn::make('city')
+                ->sometimes(),
+            TextColumn::make('region')
+                ->sometimes(),
+            TextColumn::make('country.name', 'Country')
+                ->sometimes(),
+            TextColumn::make('postal_code')
+                ->sometimes(),
+            DateColumn::make('created_at', 'Created')
+                ->sortable()
+                ->sometimes(),
         ];
     }
 
@@ -69,14 +84,10 @@ final class OrganizationTable extends Table implements ShouldRemember
     public function filters(): array
     {
         return [
-            SetFilter::make('country')->options([
-                'US' => 'United States',
-                'CA' => 'Canada',
-                'MX' => 'Mexico',
-                'GB' => 'United Kingdom',
-                'AU' => 'Australia',
-                'NZ' => 'New Zealand',
-            ])->multiple(),
+            // Filter::make('country')
+            SetFilter::make('country')
+                ->options(Country::query()->pluck('name', 'code'))
+                ->multiple(),
         ];
     }
 
@@ -113,7 +124,7 @@ final class OrganizationTable extends Table implements ShouldRemember
 
             InlineAction::make('delete', 'Delete')
                 ->icon(AppIcon::Delete)
-                ->allow(fn ($organization) => ($organization->id % 2) === 0)
+                ->allow(fn ($organization) => $organization->id % 2 === 0)
                 ->action(fn ($organization) => $organization->delete()),
 
             BulkAction::make('delete', 'Delete')

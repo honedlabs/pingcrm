@@ -22,7 +22,7 @@ return new class extends Migration
             $table->string('address', 128)->nullable();
             $table->string('city', 64)->nullable();
             $table->string('region', 64)->nullable();
-            $table->string('country', 2)->nullable();
+            $table->foreignId('country_id')->nullable()->constrained()->nullOnDelete();
             $table->string('postal_code', 32)->nullable();
             $table->timestamps();
             $table->softDeletes();
