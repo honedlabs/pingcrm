@@ -9,6 +9,51 @@ import type { Direction, Refine, Config as RefineConfig } from "./refine"
 
 export type Identifier = string | number
 
+
+interface Config extends RefineConfig {
+    endpoint: string
+    record: string
+    records: string
+    columns: string
+    pages: string
+}
+
+type PaginatorKind = 'cursor' | 'length-aware' | 'simple' | 'collection'
+
+export interface PaginatorLink {
+    url: string | null
+    label: string
+    active: boolean
+}
+
+export interface CollectionPaginator {
+    empty: boolean
+}
+
+export interface CursorPaginator extends CollectionPaginator {
+    prevLink: string | null
+    nextLink: string | null
+    perPage: number
+}
+
+export interface SimplePaginator extends CursorPaginator {
+    currentPage: number
+}
+
+export interface LengthAwarePaginator extends SimplePaginator {
+    total: number
+    from: number
+    to: number
+    firstLink: string | null
+    lastLink: string | null
+    links: PaginatorLink[]
+}
+
+export interface PerPageRecord {
+    value: number
+    active: boolean
+}
+
 export interface Column<T extends Record<string, any>> {
     name: keyof T
     label: string
@@ -25,52 +70,6 @@ export interface Column<T extends Record<string, any>> {
     }
 }
 
-export interface Config extends RefineConfig {
-    endpoint: string
-    record: string
-    records: string
-    columns: string
-    pages: string
-}
-
-export type PaginatorKind = 'cursor' | 'length-aware' | 'simple' | 'collection'
-
-export interface PaginatorLink {
-    url: string | null
-    label: string
-    active: boolean
-}
-
-export interface CollectionPaginator {
-    empty: boolean
-}
-
-export interface Paginator extends CollectionPaginator {
-    prev: string | null
-    next: string | null
-    perPage: number
-}
-
-export interface CursorPaginator extends Paginator { }
-
-export interface SimplePaginator extends Paginator {
-    current: number
-}
-
-export interface LengthAwarePaginator extends SimplePaginator {
-    total: number
-    from: number
-    to: number
-    first: string
-    last: string
-    links: PaginatorLink[]
-}
-
-export interface Page {
-    value: number
-    active: boolean
-}
-
 export interface Table<
     T extends Record<string, any> = any,
     U extends PaginatorKind = 'length-aware',
@@ -85,7 +84,7 @@ export interface Table<
                 ? CursorPaginator
                 : CollectionPaginator)), 
     columns: Column<T>[]
-    recordsPerPage: Page[]
+    recordsPerPage: PerPageRecord[]
     toggleable: boolean
     actions: {
         hasInline: boolean
@@ -110,11 +109,17 @@ export function useTable<
 >(
     props: T, 
     key: K, 
-    tableOptions: TableOptions<U> = {}
+    tableOptions: TableOptions<U> = {},
+    defaultOptions: VisitOptions = {},
 ) {
+    defaultOptions = {
+        ...defaultOptions,
+        only: [...((defaultOptions.only ?? []) as string[]), key.toString()]
+    }
+
     const table = computed(() => props[key] as Table<U, V>)
     const bulk = useBulk()
-    const refine = useRefine<T, K>(props, key)
+    const refine = useRefine<T, K>(props, key, defaultOptions)
     const config = computed(() => table.value.config)
     
     /**
@@ -208,21 +213,31 @@ export function useTable<
     const paginator = computed(() => ({
         ...table.value.paginator,
         next: (options: VisitOptions = {}) => {
-            // if (! paginator.value.next) {
-            //     return
-            // }
-
-            // router.get(paginator.value.next, {
-            //     // ...defaultOptions,
-            //     ...options,
-            //     preserveState: true,
-            // })
+            if ('nextLink' in paginator.value && paginator.value.nextLink) {
+                toPage(paginator.value.nextLink, options)
+            }
         },
         previous: (options: VisitOptions = {}) => {
+            if ('prevLink' in paginator.value && paginator.value.prevLink) {
+                toPage(paginator.value.prevLink, options)
+            }
         },
-        navigate: (page: number | string, options: VisitOptions = {}) => {
+        first: (options: VisitOptions = {}) => {
+            if ('firstLink' in paginator.value && paginator.value.firstLink) {
+                toPage(paginator.value.firstLink, options)
+            }
         },
-        
+        last: (options: VisitOptions = {}) => {
+            if ('lastLink' in paginator.value && paginator.value.lastLink) {
+                toPage(paginator.value.lastLink, options)
+            }
+        },
+        ...('links' in table.value.paginator && table.value.paginator.links ? {
+            links: table.value.paginator.links.map(link => ({
+                ...link,
+                navigate: (options: VisitOptions = {}) => link.url && toPage(link.url, options)
+            }))
+        } : {})
     }))
 
     /**
@@ -239,100 +254,60 @@ export function useTable<
         return record[config.value.record] as Identifier
     }
 
-    /**
-     * Make an Inertia request to the given route.
-     */
-    function visitAction(action: BaseAction, options: VisitOptions = {}) {
-        router.visit(action.route!.href, {
+    function toPage(link: string, options: VisitOptions = {}) {
+        router.visit(link, {
+            ...defaultOptions,
             ...options,
-            method: action.route!.method,
+            preserveState: true,
+            method: 'get',
         })
     }
 
     /**
-     * Execute an action at the table endpoint.
-     */
-    function executeAction(action: BaseAction, data: Record<string, any>, options: VisitOptions = {}) {
-        router.post(config.value.endpoint, {
-            ...data,
-            name: action.name,
-            table: table.value.id,
-        }, options)
-    }
-    
-    /**
      * Execute an inline action.
      */
-    function executeInlineAction(action: InlineAction, record: U, options: VisitOptions = {}) {
-        if (action.route) {
-            visitAction(action, options)
-            return
-        }
+    function executeInlineAction(
+        action: InlineAction, 
+        record: U, 
+        options: VisitOptions = {}
+    ) {
+        const success =executeAction<'inline'>(action, config.value.endpoint, {
+            table: table.value.id,
+            id: getRecordKey(record),
+        }, options)
         
-        if (action.action) {
-            executeAction(action, {
-                type: 'inline',
-                id: getRecordKey(record),
-            }, options)
-
-            return
+        if (! success) {
+            tableOptions.recordActions?.[action.name]?.(record)
         }
-        
-        tableOptions.recordActions?.[action.name]?.(record)
     }
 
     /**
      * Execute a bulk action.
      */
     function executeBulkAction(action: BulkAction, options: VisitOptions = {}) {
-        if (action.route) {
-            visitAction(action, options)
-            return
-        }
-
-        if (action.action) {
-            executeAction(action, {
-                type: 'bulk',
-                all: bulk.selection.value.all,
-                only: Array.from(bulk.selection.value.only),
-                except: Array.from(bulk.selection.value.except),
-            }, {
-                ...options,
-                onSuccess: (page) => {
-                    options.onSuccess?.(page)
-                    
-                    if (!action.keepSelected) {
-                        bulk.deselectAll()
-                    }
-                },
-            })
-
-            return
-        }
+        executeAction<'bulk'>(action, config.value.endpoint, {
+            table: table.value.id,
+            all: bulk.selection.value.all,
+            only: Array.from(bulk.selection.value.only),
+            except: Array.from(bulk.selection.value.except),
+        }, options)
     }
     
     /**
      * Execute a page action.
      */
     function executePageAction(action: PageAction, options: VisitOptions = {}) {
-        if (action.route) {
-            visitAction(action, options)
-            return
-        }
-
-        if (action.action) {
-            executeAction(action, {
-                type: 'page',
-            }, options)
-            return
-        }
+        executeAction<'page'>(action, config.value.endpoint, {
+            table: table.value.id,
+        }, options)
     }
 
     /**
      * Apply a new page by changing the number of records to display.
      */
-    function applyPage(page: Page, options: VisitOptions = {}) {
+    function applyPage(page: PerPageRecord, options: VisitOptions = {}) {
         router.reload({
+            ...defaultOptions,
             ...options,
             data: {
                 [config.value.records]: page.value,
@@ -350,9 +325,10 @@ export function useTable<
         }
 
         router.reload({
+            ...defaultOptions,
             ...options,
             data: {
-                [config.value.sorts]: column.sort.next,
+                [config.value.sorts]: refine.omitValue(column.sort.next),
             }
         })
     }
@@ -361,19 +337,16 @@ export function useTable<
      * Toggle a column's visibility.
      */
     function toggleColumn(column: Column<U>, options: VisitOptions = {}) {
-        let params = headings.value.map(({ name }) => name)
-
-        // Toggle the column's visibility in the list of active columns.
-        if (params.includes(column.name)) {
-            params = params.filter((name) => name !== column.name)
-        } else {
-            params.push(column.name)
-        }
+        const params = refine.toggleValue(
+            column.name,
+            headings.value.map(({ name }) => name)
+        )
 
         router.reload({
+            ...defaultOptions,
             ...options,
             data: {
-                [config.value.columns]: params.join(','),
+                [config.value.columns]: refine.delimitArray(params),
             },
         })
     }
@@ -398,7 +371,6 @@ export function useTable<
     function bindPage() {
         return {
             'onUpdate:modelValue': (checked: boolean | 'indeterminate') => {
-                console.log('Checked:', checked)
                 if (checked) {
                     selectPage()
                 } else {

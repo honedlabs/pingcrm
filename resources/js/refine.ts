@@ -93,11 +93,6 @@ export function useRefine<
 ) {
     const refinements = computed(() => props[key] as Refine)
 
-    defaultOptions = {
-        ...defaultOptions,
-        only: [...((defaultOptions.only ?? []) as string[]), key.toString()]
-    }
-
     /**
      * The available filters.
      */
@@ -120,7 +115,7 @@ export function useRefine<
     /**
      * Converts an array parameter to a comma-separated string for URL parameters.
      */
-    function getArrayParameter(value: any) {
+    function delimitArray(value: any) {
         if (Array.isArray(value)) {
             return value.join(refinements.value.config.delimiter)
         }
@@ -131,12 +126,10 @@ export function useRefine<
     /**
      * Formats a string value for search parameters.
      */
-    function getStringValue(value: any) {
+    function stringValue(value: any) {
         if (typeof value !== 'string') {
             return value
         }
-
-        console.log('String', value)
 
         return value.trim().replace(/\s+/g, '+')
     }
@@ -144,7 +137,7 @@ export function useRefine<
     /**
      * Returns undefined if the value is an empty string, null, or undefined.
      */
-    function omitEmptyParameters(value: any) {
+    function omitValue(value: any) {
         if (['', null, undefined, []].includes(value)) {
             return undefined
         }
@@ -155,7 +148,7 @@ export function useRefine<
     /**
      * Toggle the presence of a value in an array.
      */
-    function toggleParameter(value: any, values: any) {
+    function toggleValue(value: any, values: any) {
         values = Array.isArray(values) ? values : [values];
 
         if (values.includes(value)) {
@@ -252,10 +245,10 @@ export function useRefine<
         }
         
         if ('multiple' in filter && filter.multiple) {
-            value = toggleParameter(value, filter.value)
+            value = toggleValue(value, filter.value)
         }
 
-        value = [getArrayParameter, getStringValue, omitEmptyParameters]
+        value = [delimitArray, stringValue, omitValue]
             .reduce((result, transform) => transform(result), value)
 
         console.log(value)
@@ -283,7 +276,7 @@ export function useRefine<
             ...defaultOptions,
             ...options,
             data: {
-                [refinements.value.config.sorts]: omitEmptyParameters(sort.next)
+                [refinements.value.config.sorts]: omitValue(sort.next)
             }
         })
     }
@@ -292,7 +285,7 @@ export function useRefine<
      * Applies a text search.
      */
     function applySearch(value: string | null | undefined, options: VisitOptions = {}) {
-        value = [getStringValue, omitEmptyParameters]
+        value = [stringValue, omitValue]
             .reduce((result, transform) => transform(result), value)
 
         router.reload({
@@ -436,5 +429,11 @@ export function useRefine<
         // bindMatch,
         bindSearch,
         // bindSort,
+
+        /** Provide the helpers */
+        stringValue,
+        omitValue,
+        toggleValue,
+        delimitArray,
     }
 }

@@ -40,16 +40,19 @@ export interface PageAction extends Action {
     type: 'page'
 }
 
-export interface InlineActionData extends Record<string, unknown> {
+export interface InlineActionData extends Record<string, any> {
     id: Identifier
 }
 
-export interface BulkActionData extends Record<string, unknown> {
+export interface BulkActionData extends Record<string, any> {
     all: boolean
     only: Identifier[]
     except: Identifier[]
 }
 
+/**
+ * Execute the action.
+ */
 export function executeAction<
     T extends ActionType = any
 > (
@@ -65,7 +68,7 @@ export function executeAction<
         ? InlineActionData
         : T extends 'bulk' 
             ? BulkActionData
-            : object = {} as any,
+            : Record<string, any> = {} as any,
     options: VisitOptions = {}
 ) {
     if (action.route) {

@@ -226,18 +226,28 @@ const table = useTable(props, 'organizations')
                     </DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>
-            <Button size="sm" 
+            <Button size="icon" 
                 variant="outline" 
-                :disabled="!table.paginator.prev"
+                :disabled="!table.paginator.prevLink"
+                @click="table.paginator.previous()"
             >
                 <ChevronLeft class="size-4" />
                 <VisuallyHidden>
                     Previous page
                 </VisuallyHidden>
             </Button>
-            <Button size="sm" 
+            <Button v-for="link in table.paginator.links"
+                size="icon" 
+                :variant="link.active ? 'default' : 'outline'" 
+                :disabled="!link.url"
+                @click="link.navigate()"
+            >
+                {{ link.label }}
+            </Button>
+            <Button size="icon" 
                 variant="outline" 
-                :disabled="!table.paginator.next"
+                :disabled="!table.paginator.nextLink"
+                @click="table.paginator.next()"
             >
                 <ChevronRight class="size-4" />
                 <VisuallyHidden>
